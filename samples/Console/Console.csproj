@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Dynastio.Net\Dynastio.Net.csproj" />
+    <ProjectReference Include="..\..\Dynastio.Net\Dynastio.Net.csproj" />
   </ItemGroup>
 
 </Project>

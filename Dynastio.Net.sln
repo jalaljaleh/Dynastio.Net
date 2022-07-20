@@ -5,9 +5,7 @@ VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dynastio.Net", "Dynastio.Net\Dynastio.Net.csproj", "{9A117EC2-4704-46E8-AE07-CC1481F703A4}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{B00BDDEA-B010-4489-95CE-60FE92D1AAD6}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{7FCD46C8-0268-4FDC-8125-C67E3EC8D809}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "samples\Console\Console.csproj", "{7FCD46C8-0268-4FDC-8125-C67E3EC8D809}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
