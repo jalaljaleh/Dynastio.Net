@@ -54,12 +54,12 @@
 ```csharp
         static void Main(string[] args)
         {
-            var client = new DynastioClient("");
+            var client = new DynastioClient("Your_Api_Token");
             var servers = client.Game.OnlineServers;
 
             foreach (var server in servers)
                 System.Console.WriteLine(server.Label);
-
+        }
             // frankfurt-01
             // frankfurt-02
             // london-01
@@ -68,11 +68,9 @@
             // singapore-01
             // singapore-02
             // ..
-        }
 ```
 
 ##### Get Online Players
-##### Method 1
 ```csharp
           var client = new DynastioClient("Your_Api_Token");
             var servers = client.Game.OnlineServers;
@@ -86,7 +84,8 @@
                     System.Console.WriteLine(player.Score);
                 }
             }
-            // frankfurt-01
+```
+ // frankfurt-01
             // zhaleh
             // 128000
             // unwkon
@@ -94,33 +93,8 @@
             // m3di
             // 24600
             // ..
-```
-
-##### Method 2
-```csharp
-            var client = new DynastioClient("Your_Api_Token");
-            var players = client.Game.OnlinePlayers;
-
-            foreach (var player in players)
-            {
-                System.Console.WriteLine(player.Parent.Label);
-                System.Console.WriteLine(player.Nickname);
-                System.Console.WriteLine(player.Score);
-            }
-
-            // frankfurt-01
-            // zhaleh
-            // 128000
-            // frankfurt-01
-            // unwkon
-            // 1200
-            // frankfurt-01
-            // m3di
-            // 24600
-            // ..
-```
+            
 #### Sample
-
 ```csharp
         static void Main(string[] args) => new Program().MainAsync().GetAwaiter().GetResult();
         public async Task MainAsync()
@@ -129,7 +103,6 @@
             
             var onlineServers = await client.Game.GetOnlineServersAsync();
             Console.WriteLine("Servers: {0} Servers are online.", onlineServers.Count);
-            Console.WriteLine("\n");
             Console.WriteLine("\n");
 
             var singapore = onlineServers.Find(a => a.Label.Equals("singapore-0"));
@@ -145,8 +118,7 @@
             
             var version = await client.Game.GetCurrentVersionAsync();
             Console.WriteLine("Current version: {0}", version.CurrentVersion);
-            Console.WriteLine("\n");
-            Console.WriteLine("\n");
+           
 ```
 
 Look at the samples for more [Samples](https://github.com/jalaljaleh/Dynastio.Net/tree/master/samples)
