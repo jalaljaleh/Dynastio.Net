@@ -6,7 +6,7 @@ namespace Console
     {
         static void Main(string[] args)
         {
-            var client = new DynastioClient("Your_Api_Token");
+            var client = new DynastioClient();
             var servers = client.Game.OnlineServers;
 
             foreach (var server in servers)

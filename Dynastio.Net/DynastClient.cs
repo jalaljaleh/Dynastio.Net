@@ -11,7 +11,29 @@ namespace Dynastio.Net
 {
     public class DynastioClient : IDisposable
     {
+        public DynastioClient()
+        {
+            AddDefaultProviders("token:unauthenticated");
+        }
         public DynastioClient(string token)
+        {
+            AddDefaultProviders(token);
+        }
+
+        public List<IDynastioProvider> Providers { get; set; } = new List<IDynastioProvider>();
+        public IDynastioProvider Main { get => Providers.Where(a => a.IsMain).FirstOrDefault(); }
+        public IDynastioProvider Nightly { get => Providers.Where(a => a.Name.ToLower() == "nightly").FirstOrDefault(); }
+        public IDynastioProvider GetProvider(string name) => Providers.Where(a => a.Name.ToLower() == name.ToLower()).FirstOrDefault();
+
+        public ISocketGame Game { get => Main.Game; }
+        public ISocketDatabase Database { get => Main.Database; }
+
+        DynastioClient AddProvider(params DynastioProviderConfiguration[] configurations)
+        {
+            foreach (var d in configurations) Providers.Add(new DynastioProvider(d));
+            return this;
+        }
+        private void AddDefaultProviders(string token)
         {
             if (!token.Contains(":")) throw new Exception("Invalid Dynast.io Token Format.");
 
@@ -60,20 +82,6 @@ namespace Dynastio.Net
                 Changelog = "https://nightly.dynast.io/changelog.txt"
             });
 
-        }
-
-        public List<IDynastioProvider> Providers { get; set; } = new List<IDynastioProvider>();
-        public IDynastioProvider Main { get => Providers.Where(a => a.IsMain).FirstOrDefault(); }
-        public IDynastioProvider Nightly { get => Providers.Where(a => a.Name.ToLower() == "nightly").FirstOrDefault(); }
-        public IDynastioProvider GetProvider(string name) => Providers.Where(a => a.Name.ToLower() == name.ToLower()).FirstOrDefault();
-
-        public ISocketGame Game { get => Main.Game; }
-        public ISocketDatabase Database { get => Main.Database; }
-
-        DynastioClient AddProvider(params DynastioProviderConfiguration[] configurations)
-        {
-            foreach (var d in configurations) Providers.Add(new DynastioProvider(d));
-            return this;
         }
         public void Dispose()
         {

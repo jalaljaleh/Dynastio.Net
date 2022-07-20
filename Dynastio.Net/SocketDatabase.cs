@@ -24,139 +24,76 @@ namespace Dynastio.Net
         public List<Leaderboardcoin> Leaderboardcoins { get => Cache.Leaderboardcoin; }
         public async Task<List<Leaderboardcoin>> GetCoinLeaderboardAsync()
         {
-            try
-            {
-                var result = await ConnectionManager.GetAsync<DataType<Leaderboardcoin[]>>(ConnectionManager.Api.LeaderboardCoin);
-                return result.Value.ToList();
-            }
-            catch
-            {
-                return null;
-            }
+            var result = await ConnectionManager.GetAsync<DataType<Leaderboardcoin[]>>(ConnectionManager.Api.LeaderboardCoin);
+            return result.Value.ToList();
         }
         public async Task<List<Leaderboardscore>> GetScoreLeaderboardAsync(LeaderboardType leaderboardType)
         {
-            try
-            {
-                var result = await ConnectionManager.GetAsync<DataType<List<Leaderboardscore[]>>>(ConnectionManager.Api.LeaderboardScore);
-                return result.Value.ToArray()[(int)leaderboardType].ToList();
-            }
-            catch
-            {
-                return null;
-            }
+            var result = await ConnectionManager.GetAsync<DataType<List<Leaderboardscore[]>>>(ConnectionManager.Api.LeaderboardScore);
+            return result.Value.ToArray()[(int)leaderboardType].ToList();
         }
         public async Task<List<Leaderboardscore>> GetScoreLeaderboardAsync()
         {
-            try
-            {
-                var result = await ConnectionManager.GetAsync<DataType<List<Leaderboardscore[]>>>(ConnectionManager.Api.LeaderboardScore);
-                return result.Value.SelectMany(a => a).ToList();
-            }
-            catch
-            {
-                return null;
-            }
+            var result = await ConnectionManager.GetAsync<DataType<List<Leaderboardscore[]>>>(ConnectionManager.Api.LeaderboardScore);
+            return result.Value.SelectMany(a => a).ToList();
         }
 
         public async Task<UserRank> GetUserRanAsync(string playerId)
         {
-            try
-            {
-                var result = await ConnectionManager.GetAsync<DataType<List<int>>>(ConnectionManager.Api.UserRank + playerId);
-                return new UserRank(result.data);
-            }
-            catch
-            {
-                return null;
-            }
+            var result = await ConnectionManager.GetAsync<DataType<List<int>>>(ConnectionManager.Api.UserRank + playerId);
+            return new UserRank(result.data);
         }
         public async Task<PlayerStat> GetUserStatAsync(string playerId)
         {
-            try
-            {
-                var result = await ConnectionManager.GetAsync<DataType<string>>(ConnectionManager.Api.UserStat + playerId);
-                return result.DeserializeObjectData<string, PlayerStat>();
-            }
-            catch
-            {
-                return null;
-            }
+            var result = await ConnectionManager.GetAsync<DataType<string>>(ConnectionManager.Api.UserStat + playerId);
+            return result.DeserializeObjectData<string, PlayerStat>();
         }
         public async Task<Profile> GetUserProfileAsync(string playerId)
         {
-            try
-            {
-                var data = await ConnectionManager.GetAsync<DataType<Profile>>(ConnectionManager.Api.UserProfile + playerId);
+            var data = await ConnectionManager.GetAsync<DataType<Profile>>(ConnectionManager.Api.UserProfile + playerId);
 
-                var details = await GetUserProfileDetailsAsync(playerId);
-                data.Value.Details = details;
-                return data.Value;
-            }
-            catch
-            {
-                return null;
-            }
+            var details = await GetUserProfileDetailsAsync(playerId);
+            data.Value.Details = details;
+            return data.Value;
         }
         public async Task<ProfileDetails> GetUserProfileDetailsAsync(string playerId)
         {
-            try
+            var result = await ConnectionManager.GetAsync<DataType<string>>(ConnectionManager.Api.UserProfileDetails + playerId);
+            var data = result.DeserializeObjectData<string, JObject>(); ;
+            var values = JObject.Parse(data.ToString());
+            return new ProfileDetails()
             {
-                var result = await ConnectionManager.GetAsync<DataType<string>>(ConnectionManager.Api.UserProfileDetails + playerId);
-                var data = result.DeserializeObjectData<string, JObject>(); ;
-                var values = JObject.Parse(data.ToString());
-                return new ProfileDetails()
-                {
-                    Experience = int.Parse(values["experience"].ToString()),
-                    Level = int.Parse(values["level"].ToString()) + 1
-                };
-            }
-            catch
-            {
-                return null;
-            }
+                Experience = int.Parse(values["experience"].ToString()),
+                Level = int.Parse(values["level"].ToString()) + 1
+            };
         }
         public async Task<Personalchest> GetUserPersonalchestAsync(string PlayerId)
         {
-            try
+            return new Personalchest()
             {
-                return new Personalchest()
-                {
-                    Items = await GetUserPersonalchestItemsAsync(PlayerId)
-                };
-            }
-            catch
-            {
-                return null;
-            }
+                Items = await GetUserPersonalchestItemsAsync(PlayerId)
+            };
         }
         public async Task<List<PersonalChestItem>> GetUserPersonalchestItemsAsync(string playerId)
         {
-            try
+            var result = await ConnectionManager.GetAsync<DataType<string>>(ConnectionManager.Api.UserChest + playerId);
+            var data = result.DeserializeObjectData<string, JObject>().SelectToken("items").ToArray();
+            var chestItems = new List<PersonalChestItem>();
+            foreach (var item in data)
             {
-                var result = await ConnectionManager.GetAsync<DataType<string>>(ConnectionManager.Api.UserChest + playerId);
-                var data = result.DeserializeObjectData<string, JObject>().SelectToken("items").ToArray();
-                var chestItems = new List<PersonalChestItem>();
-                foreach (var item in data)
+                var item_ = new PersonalChestItem()
                 {
-                    var item_ = new PersonalChestItem()
-                    {
-                        index = int.Parse(item[0].ToString()),
-                        ItemType = (ItemType)int.Parse(item[1].ToString()),
-                        Count = int.Parse(item[2].ToString()),
-                        Durablity = int.Parse(item[3].ToString()),
-                        Details = item[4].ToString(),
-                        OwnerID = item[5].ToString(),
-                        Token = item[6].ToString()
-                    };
-                    chestItems.Add(item_);
-                }
-                return chestItems;
+                    index = int.Parse(item[0].ToString()),
+                    ItemType = (ItemType)int.Parse(item[1].ToString()),
+                    Count = int.Parse(item[2].ToString()),
+                    Durablity = int.Parse(item[3].ToString()),
+                    Details = item[4].ToString(),
+                    OwnerID = item[5].ToString(),
+                    Token = item[6].ToString()
+                };
+                chestItems.Add(item_);
             }
-            catch
-            {
-                return new List<PersonalChestItem>();
-            }
+            return chestItems;
         }
         public async Task<bool> IsUserAccountExistAsync(string Id)
         {
@@ -164,20 +101,13 @@ namespace Dynastio.Net
         }
         public async Task<UserSurroundingRank> GetUserSurroundingRankAsync(string playerId)
         {
-            try
+            var result = await ConnectionManager.GetAsync<DataType<List<UserSurroundingRankRow[]>>>(ConnectionManager.Api.UserSurroundingRank + playerId);
+            return new UserSurroundingRank(playerId)
             {
-                var result = await ConnectionManager.GetAsync<DataType<List<UserSurroundingRankRow[]>>>(ConnectionManager.Api.UserSurroundingRank + playerId);
-                return new UserSurroundingRank(playerId)
-                {
-                    UsersRankDaily = result.data[0].ToList(),
-                    UsersRankWeekly = result.data[1].ToList(),
-                    UsersRankMontly = result.data[2].ToList()
-                };
-            }
-            catch
-            {
-                return null;
-            }
+                UsersRankDaily = result.data[0].ToList(),
+                UsersRankWeekly = result.data[1].ToList(),
+                UsersRankMontly = result.data[2].ToList()
+            };
         }
 
         public void Dispose()

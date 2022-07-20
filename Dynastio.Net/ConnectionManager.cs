@@ -27,6 +27,7 @@ namespace Dynastio.Net
             client = new HttpClient(clientHandler);
             client.BaseAddress = new Uri(Api.BaseAddress);
             client.DefaultRequestHeaders.Add(Api.AuthorizationKey, Api.AuthorizationValue);
+            client.DefaultRequestHeaders.Add("user-agent", "dynastio.net");
         }
         internal async Task<string> GetAsync(string api)
         {

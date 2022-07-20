@@ -1,31 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-	  <TargetFrameworks>net46;net5.0</TargetFrameworks>
-	  <ImplicitUsings>disable</ImplicitUsings>
-	  <Nullable>disable</Nullable>
-	  
-	  <PackageId>Dynastio.Net</PackageId>
-	  <VersionPrefix>2.0.1</VersionPrefix>
+	<PropertyGroup>
+		<TargetFrameworks>net46;net5.0</TargetFrameworks>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Nullable>disable</Nullable>
 
-	  <Description>An Api library for Dynast.io that implements the newest api features for using, development and testing.</Description>
-	  <Copyright>Jalal Jaleh 2022</Copyright>
-	  <LangVersion>latest</LangVersion>
-	  <Authors>Jalal Jaleh</Authors>
-	  <PackageTags>dynast;dynastio;dynast.io</PackageTags>
-	  <PackageProjectUrl>https://github.com/JalalJaleh/Dynastio.net</PackageProjectUrl>
-	  <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
-	  <PackageIconUrl>https://github.com/jalaljaleh/Dynastio.Net/raw/master/Dynastio.Net/Resource/logo.jpg</PackageIconUrl>
-	  <RepositoryType>git</RepositoryType>
-	  <RepositoryUrl>https://github.com/JalalJaleh/Dynastio.net</RepositoryUrl>
-	  <OutputType>Library</OutputType>
-	  
-   
-  </PropertyGroup>
+		<PackageId>Dynastio.Net</PackageId>
+		<VersionPrefix>2.0.1</VersionPrefix>
 
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
-  </ItemGroup>
+		<Description>An Api library for Dynast.io that implements the newest api features for using, development and testing.</Description>
+		<Copyright>Jalal Jaleh 2022</Copyright>
+		<LangVersion>latest</LangVersion>
+		<Authors>Jalal Jaleh</Authors>
+		<PackageTags>dynast;dynastio;dynast.io</PackageTags>
+		<PackageProjectUrl>https://github.com/JalalJaleh/Dynastio.net</PackageProjectUrl>
+		<PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
+		<PackageIconUrl>https://github.com/jalaljaleh/Dynastio.Net/raw/master/Dynastio.Net/Resource/logo.jpg</PackageIconUrl>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/JalalJaleh/Dynastio.net</RepositoryUrl>
+		<OutputType>Library</OutputType>
+		<GenerateDocumentationFile>False</GenerateDocumentationFile>
+		<SignAssembly>False</SignAssembly>
+		<DelaySign>False</DelaySign>
+
+
+	</PropertyGroup>
+
+
+
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4"/>
+	</ItemGroup>
+
 
 </Project>
