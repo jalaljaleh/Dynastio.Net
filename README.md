@@ -21,7 +21,16 @@
   </p>
 </div>
 
+
 <div align="center">
+  
+  <a href="https://www.nuget.org/packages/Dynastio.Net/">
+    <img src="https://img.shields.io/nuget/vpre/Dynastio.Net.svg?maxAge=2592000?style=plastic" alt="NuGet">
+  </a>
+ 
+   <a href="https://discord.gg/GVUXMNv7vV">
+    <img src="https://discord.com/api/guilds/875716592770637824/widget.png" alt="Discord">
+  </a>
   
 </div>
 
