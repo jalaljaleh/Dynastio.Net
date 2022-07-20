@@ -8,8 +8,8 @@ namespace Dynastio.Net
 {
     public interface ISocketGame : IDisposable
     {
-        Task<List<Player>> GetOnlinePlayers(ServerType serverType = ServerType.All, bool OnlyAuthUsers = false);
-        Task<List<Server>> GetOnlineServers(ServerType serverType = ServerType.Public);
+        Task<List<Player>> GetOnlinePlayersAsync(ServerType serverType = ServerType.All);
+        Task<List<Server>> GetOnlineServersAsync(ServerType serverType = ServerType.Public);
         Task<Version> GetCurrentVersionAsync();
         Task<string> GetChangeLogAsync();
         List<Server> OnlineServers { get; }

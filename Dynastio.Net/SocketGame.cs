@@ -26,7 +26,7 @@ namespace Dynastio.Net
         public List<Player> OnlinePlayers { get => Cache.Players; }
         public string ChangeLog { get => Cache.Changelog; }
 
-        public async Task<List<Server>> GetOnlineServers(ServerType serverType = ServerType.Public)
+        public async Task<List<Server>> GetOnlineServersAsync(ServerType serverType = ServerType.Public)
         {
             string url = "";
             switch (serverType)
@@ -49,10 +49,10 @@ namespace Dynastio.Net
             var result = await ConnectionManager.GetAsync<DataType<List<Server>>>(ConnectionManager.Api.ServersBaseAddress + url + "&random=" + _random.Next());
             return result.Servers;
         }
-        public async Task<List<Player>> GetOnlinePlayers(ServerType serverType = ServerType.All, bool OnlyAuthUsers = false)
+        public async Task<List<Player>> GetOnlinePlayersAsync(ServerType serverType = ServerType.All)
         {
-            var servers = await GetOnlineServers(serverType);
-            return OnlyAuthUsers ? servers.SelectMany(a => a.Players.Where(b => !string.IsNullOrEmpty(b.Id))).ToList() : servers.SelectMany(c => c.Players).ToList();
+            var servers = await GetOnlineServersAsync(serverType);
+            return servers.SelectMany(c => c.Players).ToList();
         }
         public async Task<Version> GetCurrentVersionAsync()
         {

@@ -82,7 +82,7 @@ namespace Dynastio.Net
                 {
                     try
                     {
-                        var servers = provider.Game.GetOnlineServers(ServerType.AllWithPlayers).Result;
+                        var servers = provider.Game.GetOnlineServersAsync(ServerType.AllWithPlayers).Result;
                         if (servers != null)
                         {
                             _serversContent = servers;

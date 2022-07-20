@@ -16,8 +16,8 @@ namespace Dynastio.Net
         Task<Profile> GetUserProfileAsync(string playerId);
         Task<Personalchest> GetUserPersonalchestAsync(string PlayerId);
         Task<ProfileDetails> GetUserProfileDetailsAsync(string playerId);
-        Task<UserRank> GetUserRank(string playerId);
-        Task<UserSurroundingRank> GetUserSurroundingRank(string playerId);
+        Task<UserRank> GetUserRanAsync(string playerId);
+        Task<UserSurroundingRank> GetUserSurroundingRankAsync(string playerId);
         Task<bool> IsUserAccountExistAsync(string Id);
         List<Leaderboardcoin> Leaderboardcoins { get; }
         List<Leaderboardscore> Leaderboardscores { get; }

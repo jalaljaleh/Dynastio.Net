@@ -16,7 +16,7 @@ namespace Dynastio.Net
         internal Player Update(Server parent)
         {
             Parent = parent;
-            UniqeId = "hash$" + (Parent.ServerName + InternalId).GetHashCode();
+            UniqeId = "hash$" + (Parent.Label + InternalId).GetHashCode();
             return this;
         }
 

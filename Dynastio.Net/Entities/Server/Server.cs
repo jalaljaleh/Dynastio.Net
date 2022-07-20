@@ -66,7 +66,7 @@ namespace Dynastio.Net
         public string Region { get; set; }
 
         [JsonProperty("label")]
-        public string ServerName { get; set; }
+        public string Label { get; set; }
 
         [JsonProperty("version")]
         public string Version { get; set; }

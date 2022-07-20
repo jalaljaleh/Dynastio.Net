@@ -59,7 +59,7 @@ namespace Dynastio.Net
             }
         }
 
-        public async Task<UserRank> GetUserRank(string playerId)
+        public async Task<UserRank> GetUserRanAsync(string playerId)
         {
             try
             {
@@ -162,7 +162,7 @@ namespace Dynastio.Net
         {
             try { var data = await GetUserProfileDetailsAsync(Id); return true; } catch { return false; };
         }
-        public async Task<UserSurroundingRank> GetUserSurroundingRank(string playerId)
+        public async Task<UserSurroundingRank> GetUserSurroundingRankAsync(string playerId)
         {
             try
             {
