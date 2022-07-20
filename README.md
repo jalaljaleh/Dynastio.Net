@@ -23,7 +23,6 @@
 
 <div align="center">
   
-[![Discord](https://discord.com/api/guilds/875716592770637824/widget.png)](https://discord.gg/x5j4cZtnWR) 
 </div>
 
 
@@ -37,29 +36,94 @@
 
 <!-- GETTING STARTED -->
 ## Getting Started
-- Meet the prerequisites.
-
-
-### Prerequisites
-This is an example of how to list things you need to use the software and how to install them.
-
 - .Net46 or .Net 5
 - Dynast.io Api Token
 
+#### Usage
 
-### Usage
+##### Get Online Servers
+```csharp
+        static void Main(string[] args)
+        {
+            var client = new DynastioClient("");
+            var servers = client.Game.OnlineServers;
+
+            foreach (var server in servers)
+                System.Console.WriteLine(server.Label);
+
+            // frankfurt-01
+            // frankfurt-02
+            // london-01
+            // london-02
+            // london-03
+            // singapore-01
+            // singapore-02
+            // ..
+        }
+```
+
+##### Get Online Players
+##### Method 1
+```csharp
+          var client = new DynastioClient("Your_Api_Token");
+            var servers = client.Game.OnlineServers;
+
+            foreach (var server in servers)
+            {
+                System.Console.WriteLine(server.Label);
+                foreach (var player in server.Players)
+                {
+                    System.Console.WriteLine(player.Nickname);
+                    System.Console.WriteLine(player.Score);
+                }
+            }
+            // frankfurt-01
+            // zhaleh
+            // 128000
+            // unwkon
+            // 1200
+            // m3di
+            // 24600
+            // ..
+```
+
+##### Method 2
+```csharp
+            var client = new DynastioClient("Your_Api_Token");
+            var players = client.Game.OnlinePlayers;
+
+            foreach (var player in players)
+            {
+                System.Console.WriteLine(player.Parent.Label);
+                System.Console.WriteLine(player.Nickname);
+                System.Console.WriteLine(player.Score);
+            }
+
+            // frankfurt-01
+            // zhaleh
+            // 128000
+            // frankfurt-01
+            // unwkon
+            // 1200
+            // frankfurt-01
+            // m3di
+            // 24600
+            // ..
+```
+#### Sample
+
 ```csharp
         static void Main(string[] args) => new Program().MainAsync().GetAwaiter().GetResult();
         public async Task MainAsync()
         {
             DynastioClient client = new DynastioClient("Your_Api_Token");
             
-            var onlineServers = await client.Game.GetOnlineServers();
+            var onlineServers = await client.Game.GetOnlineServersAsync();
             Console.WriteLine("Servers: {0} Servers are online.", onlineServers.Count);
             Console.WriteLine("\n");
             Console.WriteLine("\n");
 
-            var singapore = onlineServers.Find(a => a.ServerName.Equals("singapore-0"));
+            var singapore = onlineServers.Find(a => a.Label.Equals("singapore-0"));
             Console.WriteLine("Top player name: {0}", singapore.TopPlayerName);
             Console.WriteLine("Top player score: {0}", singapore.TopPlayerScore);
             Console.WriteLine("Top player level: {0}", singapore.TopPlayerLevel);
@@ -75,6 +139,8 @@ This is an example of how to list things you need to use the software and how to
             Console.WriteLine("\n");
             Console.WriteLine("\n");
 ```
+
+Look at the samples for more [Samples](https://github.com/jalaljaleh/Dynastio.Net/tree/master/samples)
 
 
 <!-- LICENSE -->
