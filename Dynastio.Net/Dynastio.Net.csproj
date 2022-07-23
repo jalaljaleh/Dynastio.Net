@@ -6,7 +6,7 @@
 		<Nullable>disable</Nullable>
 
 		<PackageId>Dynastio.Net</PackageId>
-		<VersionPrefix>2.0.1</VersionPrefix>
+		<VersionPrefix>2.0.2</VersionPrefix>
 
 		<Description>An Api library for Dynast.io that implements the newest api features for using, development and testing.</Description>
 		<Copyright>Jalal Jaleh 2022</Copyright>

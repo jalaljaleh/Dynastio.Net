@@ -22,8 +22,10 @@ namespace Dynastio.Net
         public void Initialize()
         {
             HttpClientHandler clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
-
+            clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) =>
+            {
+                return true;
+            };
             client = new HttpClient(clientHandler);
             client.BaseAddress = new Uri(Api.BaseAddress);
             client.DefaultRequestHeaders.Add(Api.AuthorizationKey, Api.AuthorizationValue);

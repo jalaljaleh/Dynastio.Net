@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Dynastio.Net;
 namespace Console
 {
@@ -6,7 +7,11 @@ namespace Console
     {
         static void Main(string[] args)
         {
+            //new Program().MainAsync().GetAwaiter().GetResult();
+         
+            
             var client = new DynastioClient();
+
             var servers = client.Game.OnlineServers;
 
             foreach (var server in servers)
@@ -18,6 +23,17 @@ namespace Console
                     System.Console.WriteLine(player.Score);
                 }
             }
+
+
         }
+        public async Task MainAsync()
+        {
+            var client = new DynastioClient("Dynastio_Api_Key");
+
+            var profile = await client.Database.GetUserProfileAsync("discord:0000000000000000").TryGet();
+
+        }
+
     }
+
 }
