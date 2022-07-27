@@ -50,21 +50,19 @@
 
 ### Usage
 
+
 #### Get Online Servers
 ```csharp
             var client = new DynastioClient();
             var servers = await client.Main.GetOnlineServersAsync();
 
-            foreach (var server in servers)
-            {
-                System.Console.WriteLine(server.Label);
-            }
             // frankfurt-01
             // london-01
             // london-02
             // singapore-01
             // ..
 ```
+
 
 #### Nightly Servers
 ```csharp
@@ -75,11 +73,13 @@
             // nightly-solo
 ```
 
+
 #### User Profile & Api Authorization 
 ```csharp
             var client = new DynastioClient("Api_Key_Value");
             var profile = await client.Nightly.GetUserProfileAsync("discord:805534924622004274");
 ```
+
 
 #### Custom Provider
 ```csharp
@@ -93,8 +93,9 @@
             client.AddProvider(config);
 ```
 
+
 #### Custom Cache
-```chsarp
+```csharp
             var cacheConfig = new DynastioCacheConfiguration()
             {
                 CacheTimeChangeLog = 500, //ms
@@ -103,6 +104,7 @@
             };
             var client = new DynastioClient("Api_Key_Value", true,cacheConfig);
 ```
+
 
 #### Get Providers
 ```csharp
