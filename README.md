@@ -48,77 +48,74 @@
 - .Net46 or .Net 5
 - Dynast.io Api Token
 
-#### Usage
+### Usage
 
-##### Get Online Servers
+#### Get Online Servers
 ```csharp
-        static void Main(string[] args)
-        {
-            var client = new DynastioClient("Your_Api_Token");
-            var servers = client.Game.OnlineServers;
-
-            foreach (var server in servers)
-                System.Console.WriteLine(server.Label);
-        }
-            // frankfurt-01
-            // frankfurt-02
-            // london-01
-            // london-02
-            // london-03
-            // singapore-01
-            // singapore-02
-            // ..
-```
-
-##### Get Online Players
-```csharp
-          var client = new DynastioClient("Your_Api_Token");
-            var servers = client.Game.OnlineServers;
+            var client = new DynastioClient();
+            var servers = await client.Main.GetOnlineServersAsync();
 
             foreach (var server in servers)
             {
                 System.Console.WriteLine(server.Label);
-                foreach (var player in server.Players)
-                {
-                    System.Console.WriteLine(player.Nickname);
-                    System.Console.WriteLine(player.Score);
-                }
             }
-```
- // frankfurt-01
-            // zhaleh
-            // 128000
-            // unwkon
-            // 1200
-            // m3di
-            // 24600
+            // frankfurt-01
+            // london-01
+            // london-02
+            // singapore-01
             // ..
-            
-#### Sample
+```
+
+#### Nightly Servers
 ```csharp
-        static void Main(string[] args) => new Program().MainAsync().GetAwaiter().GetResult();
-        public async Task MainAsync()
-        {
-            DynastioClient client = new DynastioClient("Your_Api_Token");
-            
-            var onlineServers = await client.Game.GetOnlineServersAsync();
-            Console.WriteLine("Servers: {0} Servers are online.", onlineServers.Count);
-            Console.WriteLine("\n");
+            var client = new DynastioClient();
+            var servers = await client.Nightly.GetOnlineServersAsync();
+            // nightly-01
+            // nightly-02
+            // nightly-solo
+```
 
-            var singapore = onlineServers.Find(a => a.Label.Equals("singapore-0"));
-            Console.WriteLine("Top player name: {0}", singapore.TopPlayerName);
-            Console.WriteLine("Top player score: {0}", singapore.TopPlayerScore);
-            Console.WriteLine("Top player level: {0}", singapore.TopPlayerLevel);
-            Console.WriteLine("Server lifetime: {0}", singapore.Lifetime);
+#### User Profile & Api Authorization 
+```csharp
+            var client = new DynastioClient("Api_Key_Value");
+            var profile = await client.Nightly.GetUserProfileAsync("discord:805534924622004274");
+```
 
-            var personalChest = await client.Database.GetUserPersonalchestAsync("discord:805534924622004274");
-            Console.WriteLine("{0,-15} {1,5}","Item","Count");
-            Console.WriteLine("-----------------------");
-            personalChest.Items.ForEach(a => Console.WriteLine(string.Format("{0,-15} {1,-5}", a.ItemType, a.Count)));
-            
-            var version = await client.Game.GetCurrentVersionAsync();
-            Console.WriteLine("Current version: {0}", version.CurrentVersion);
-           
+#### Custom Provider
+```csharp
+            var client = new DynastioClient("Api_Key_Value", false);
+            var config = new DynastioProviderConfiguration()
+            {
+                Name = "Main",
+                BaseAddress = "https://auth.dynast.io/",
+                // Fill All...
+            };
+            client.AddProvider(config);
+```
+
+#### Custom Cache
+```chsarp
+            var cacheConfig = new DynastioCacheConfiguration()
+            {
+                CacheTimeChangeLog = 500, //ms
+                CacheTimeServers = 30000, //ms
+                ...
+            };
+            var client = new DynastioClient("Api_Key_Value", true,cacheConfig);
+```
+
+#### Get Providers
+```csharp
+            var client = new DynastioClient();
+            var nightly01 = client.Nightly;
+            var nightly02 = client["nightly"]; // provider name
+            var nightly03 = client[DynastioProviderType.Nightly];
+
+            var main01 = client.Main;
+            var main02 = client["main"]; // provider name
+            var main03 = client[DynastioProviderType.Main];
+
+            var changelog = nightly02.ChangeLog;
 ```
 
 Look at the samples for more [Samples](https://github.com/jalaljaleh/Dynastio.Net/tree/master/samples)
