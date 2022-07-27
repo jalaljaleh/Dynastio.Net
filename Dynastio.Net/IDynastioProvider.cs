@@ -11,7 +11,5 @@ namespace Dynastio.Net
         string ProviderName { get; }
         bool IsMainProvider { get; }
         bool IsNightlyProvider { get; }
-        
-
     }
 }

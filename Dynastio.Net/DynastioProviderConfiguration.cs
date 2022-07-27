@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Dynastio.Net
 {
-    internal class DynastioProviderConfiguration
+    public class DynastioProviderConfiguration
     {
         public string Name { get; set; }
         public string BaseAddress { get; set; }

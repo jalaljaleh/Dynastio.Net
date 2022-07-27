@@ -31,8 +31,9 @@ namespace Console
             var client = new DynastioClient("Api_Key_Value");
             var changelog = client.Main.ChangeLog;
             var videos = await client.Main.GetFeaturedVideosAsync();
-            var profile = await client["nightly"].GetUserProfileAsync("google:112093004829153652749");
-
+            var profileDev = await client["nightly"].GetUserProfileAsync("google:112093004829153652749");
+            var profileZhaleh = await client[DynastioProviderType.Main].GetUserProfileAsync("discord:805534924622004274");
+           
         }
 
     }

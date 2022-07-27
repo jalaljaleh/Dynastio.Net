@@ -11,27 +11,41 @@ namespace Dynastio.Net
 {
     public class DynastioClient : IDisposable
     {
-        public DynastioClient()
+        private DynastioCacheConfiguration _cacheConfiguration;
+        public DynastioClient(bool DefaultProviders = true, DynastioCacheConfiguration cacheConfiguration = null)
         {
-            AddDefaultProviders("token:unauthenticated");
-        }
-        public DynastioClient(string token)
-        {
-            AddDefaultProviders(token);
-        }
+            this._cacheConfiguration = cacheConfiguration;
 
+            Initialize();
+            if (DefaultProviders)
+                AddDefaultProviders("token:unauthenticated");
+        }
+        public DynastioClient(string token, bool DefaultProviders = true, DynastioCacheConfiguration cacheConfiguration = null)
+        {
+            this._cacheConfiguration = cacheConfiguration;
+
+            Initialize();
+            if (DefaultProviders)
+                AddDefaultProviders(token);
+        }
+        private void Initialize()
+        {
+            if (this._cacheConfiguration == null)
+                this._cacheConfiguration = new DynastioCacheConfiguration();
+        }
         public List<IDynastioProvider> Providers { get; set; } = new List<IDynastioProvider>();
         public IDynastioProvider Main { get => Providers.FirstOrDefault(a => a.IsMainProvider); }
         public IDynastioProvider Nightly { get => Providers.FirstOrDefault(a => a.ProviderName.ToLower() == "nightly"); }
         public IDynastioProvider GetProvider(string name) => Providers.FirstOrDefault(a => a.ProviderName.ToLower() == name.ToLower());
         public IDynastioProvider this[string name] { get => GetProvider(name); }
+        public IDynastioProvider this[DynastioProviderType provider] { get => GetProvider(provider.ToString()); }
 
-        DynastioClient AddProvider(params DynastioProviderConfiguration[] configurations)
+        public DynastioClient AddProvider(DynastioProviderConfiguration configurations, DynastioCacheConfiguration cacheConfiguration = null)
         {
-            foreach (var d in configurations) Providers.Add(new DynastioProvider(d));
+            Providers.Add(new DynastioProvider(configurations, cacheConfiguration));
             return this;
         }
-        private void AddDefaultProviders(string token)
+        private void AddDefaultProviders(string token, DynastioCacheConfiguration cacheConfiguration = null)
         {
             if (!token.Contains(":")) throw new Exception("Invalid Dynast.io Token Format.");
 
@@ -54,11 +68,12 @@ namespace Dynastio.Net
                 AllServers = "all",
                 ServersWithPlayers = "?full=true",
                 AllServersWithPlayers = "all?full=true",
-                FeaturedVideos= "api/get_featured_videos",
+                FeaturedVideos = "api/get_featured_videos",
                 Version = "https://dynast.io/version.json",
                 Changelog = "https://dynast.io/changelog.txt"
-            },
-            new DynastioProviderConfiguration()
+            }, cacheConfiguration ?? this._cacheConfiguration);
+
+            AddProvider(new DynastioProviderConfiguration()
             {
                 Name = "Nightly",
                 BaseAddress = "https://auth.nightly.dynast.io/",
@@ -80,8 +95,7 @@ namespace Dynastio.Net
                 FeaturedVideos = "api/get_featured_videos",
                 Version = "https://nightly.dynast.io/version.json",
                 Changelog = "https://nightly.dynast.io/changelog.txt"
-            });
-
+            }, cacheConfiguration ?? this._cacheConfiguration);
         }
         public void Dispose()
         {

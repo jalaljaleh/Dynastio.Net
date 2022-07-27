@@ -9,9 +9,9 @@ namespace Dynastio.Net
 {
     public enum ServerType
     {
-        Public,
-        PublicWithPlayers,
-        All,
-        AllWithPlayers,
+        PublicServersWithTopPlayers,
+        PublicServersWithAllPlayers,
+        AllServersWithTopPlayers,
+        AllServersWithAllPlayers,
     }
 }

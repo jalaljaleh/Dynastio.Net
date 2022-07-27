@@ -14,55 +14,56 @@ namespace Dynastio.Net
         public bool IsMainProvider { get; }
         public bool IsNightlyProvider { get => !IsMainProvider; }
 
-        internal DynastioProvider(DynastioProviderConfiguration api)
+        internal DynastioProvider(DynastioProviderConfiguration api, DynastioCacheConfiguration cacheConfiguration)
         {
             this.Configuration = api;
             ProviderName = Configuration.Name;
             IsMainProvider = Configuration.Name == "Main";
             ConnectionManager = new ConnectionManager(Configuration);
             ConnectionManager.Initialize();
-            Cache = new DynastioCache(this);
+            Cache = new DynastioCache(this, cacheConfiguration);
         }
         private readonly Random _random = new Random();
         public ConnectionManager ConnectionManager { get; }
-        public DynastioCache Cache { get; }
+        private IDynastioCache Cache { get; }
         public List<Server> OnlineServers { get => Cache.OnlineServers; }
         public List<Player> OnlinePlayers { get => Cache.Players; }
         public List<Leaderboardscore> Leaderboardscores { get => Cache.Leaderboardscore; }
         public List<Leaderboardcoin> Leaderboardcoins { get => Cache.Leaderboardcoin; }
         public string ChangeLog { get => Cache.Changelog; }
+        public List<FeaturedVideos> FeaturedVideos { get => Cache.FeaturedVideos; }
         public async Task<List<FeaturedVideos>> GetFeaturedVideosAsync()
         {
             var result = await ConnectionManager.GetAsync<DataType<List<FeaturedVideos>>>(ConnectionManager.Api.FeaturedVideos);
             return result.Value;
         }
-        public async Task<List<Server>> GetOnlineServersAsync(ServerType serverType = ServerType.Public)
+        public async Task<List<Server>> GetOnlineServersAsync(ServerType serverType = ServerType.AllServersWithTopPlayers)
         {
             string url = "";
             switch (serverType)
             {
                 default:
-                case ServerType.Public:
+                case ServerType.PublicServersWithTopPlayers:
                     url = ConnectionManager.Api.Servers;
                     break;
-                case ServerType.All:
+                case ServerType.AllServersWithTopPlayers:
                     url = ConnectionManager.Api.AllServers;
                     break;
-                case ServerType.AllWithPlayers:
+                case ServerType.AllServersWithAllPlayers:
                     url = ConnectionManager.Api.AllServersWithPlayers;
                     break;
-                case ServerType.PublicWithPlayers:
+                case ServerType.PublicServersWithAllPlayers:
                     url = ConnectionManager.Api.ServersWithPlayers;
                     break;
             }
 
-            var result = await ConnectionManager.GetAsync<DataType<List<Server>>>(ConnectionManager.Api.ServersBaseAddress + url + "&random=" + _random.Next());
+            var result = await ConnectionManager.GetAsync<DataType<List<Server>>>(ConnectionManager.Api.ServersBaseAddress + url);
             return result.Servers;
         }
-        public async Task<List<Player>> GetOnlinePlayersAsync(ServerType serverType = ServerType.All)
+        public async Task<List<Player>> GetOnlinePlayersAsync(ServerType serverType = ServerType.PublicServersWithTopPlayers)
         {
             var servers = await GetOnlineServersAsync(serverType);
-            return servers.SelectMany(c => c.Players).ToList();
+            return servers.SelectMany(c => c.Players ?? new()).ToList() ?? new();
         }
         public async Task<Version> GetCurrentVersionAsync()
         {
