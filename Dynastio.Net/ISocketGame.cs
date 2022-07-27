@@ -12,6 +12,7 @@ namespace Dynastio.Net
         Task<List<Server>> GetOnlineServersAsync(ServerType serverType = ServerType.Public);
         Task<Version> GetCurrentVersionAsync();
         Task<string> GetChangeLogAsync();
+        Task<List<FeaturedVideos>> GetFeaturedVideosAsync();
         List<Server> OnlineServers { get; }
         List<Player> OnlinePlayers { get; }
         string ChangeLog { get; }

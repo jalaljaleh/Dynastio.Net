@@ -52,7 +52,7 @@ namespace Dynastio.Net
                 if ((DateTime.UtcNow - _leaderboardcoinTime).TotalMilliseconds > CacheTimeLeaderboardcoin || _leaderboardcoinContent == null)
                 {
 
-                    _leaderboardcoinContent = provider.Database.GetCoinLeaderboardAsync().Result;
+                    _leaderboardcoinContent = provider.GetCoinLeaderboardAsync().Result;
                     _leaderboardcoinTime = DateTime.UtcNow;
 
                 }
@@ -66,7 +66,7 @@ namespace Dynastio.Net
                 if ((DateTime.UtcNow - _leaderboardscoreTime).TotalMilliseconds > CacheTimeLeaderboardscore || _leaderboardscoreContent == null)
                 {
                     var list = new List<Leaderboardscore>();
-                    list = provider.Database.GetScoreLeaderboardAsync().Result;
+                    list = provider.GetScoreLeaderboardAsync().Result;
                     _leaderboardscoreContent = list;
                     _leaderboardscoreTime = DateTime.UtcNow;
                 }
@@ -82,7 +82,7 @@ namespace Dynastio.Net
                 {
                     try
                     {
-                        var servers = provider.Game.GetOnlineServersAsync(ServerType.AllWithPlayers).Result;
+                        var servers = provider.GetOnlineServersAsync(ServerType.AllWithPlayers).Result;
                         if (servers != null)
                         {
                             _serversContent = servers;
@@ -103,7 +103,7 @@ namespace Dynastio.Net
                 {
                     try
                     {
-                        string logs = provider.Game.GetChangeLogAsync().Result;
+                        string logs = provider.GetChangeLogAsync().Result;
                         _changelogContent = logs;
                         _changelogTime = DateTime.UtcNow;
                     }

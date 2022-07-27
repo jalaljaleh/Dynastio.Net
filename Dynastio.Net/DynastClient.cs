@@ -21,12 +21,10 @@ namespace Dynastio.Net
         }
 
         public List<IDynastioProvider> Providers { get; set; } = new List<IDynastioProvider>();
-        public IDynastioProvider Main { get => Providers.Where(a => a.IsMain).FirstOrDefault(); }
-        public IDynastioProvider Nightly { get => Providers.Where(a => a.Name.ToLower() == "nightly").FirstOrDefault(); }
-        public IDynastioProvider GetProvider(string name) => Providers.Where(a => a.Name.ToLower() == name.ToLower()).FirstOrDefault();
-
-        public ISocketGame Game { get => Main.Game; }
-        public ISocketDatabase Database { get => Main.Database; }
+        public IDynastioProvider Main { get => Providers.FirstOrDefault(a => a.IsMainProvider); }
+        public IDynastioProvider Nightly { get => Providers.FirstOrDefault(a => a.ProviderName.ToLower() == "nightly"); }
+        public IDynastioProvider GetProvider(string name) => Providers.FirstOrDefault(a => a.ProviderName.ToLower() == name.ToLower());
+        public IDynastioProvider this[string name] { get => GetProvider(name); }
 
         DynastioClient AddProvider(params DynastioProviderConfiguration[] configurations)
         {
@@ -56,6 +54,7 @@ namespace Dynastio.Net
                 AllServers = "all",
                 ServersWithPlayers = "?full=true",
                 AllServersWithPlayers = "all?full=true",
+                FeaturedVideos= "api/get_featured_videos",
                 Version = "https://dynast.io/version.json",
                 Changelog = "https://dynast.io/changelog.txt"
             },
@@ -78,6 +77,7 @@ namespace Dynastio.Net
                 AllServers = "all",
                 ServersWithPlayers = "?full=true",
                 AllServersWithPlayers = "all?full=true",
+                FeaturedVideos = "api/get_featured_videos",
                 Version = "https://nightly.dynast.io/version.json",
                 Changelog = "https://nightly.dynast.io/changelog.txt"
             });

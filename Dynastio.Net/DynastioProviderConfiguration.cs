@@ -25,7 +25,7 @@ namespace Dynastio.Net
         public string AllServers { get; set; }
         public string ServersWithPlayers { get; set; }
         public string AllServersWithPlayers { get; set; }
-
+        public string FeaturedVideos { get; set; }
         public string Version { get; set; }
         public string Changelog { get; set; }
 

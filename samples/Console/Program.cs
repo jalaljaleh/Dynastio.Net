@@ -8,11 +8,11 @@ namespace Console
         static void Main(string[] args)
         {
             //new Program().MainAsync().GetAwaiter().GetResult();
-         
-            
+
+
             var client = new DynastioClient();
 
-            var servers = client.Game.OnlineServers;
+            var servers = client.Main.OnlineServers;
 
             foreach (var server in servers)
             {
@@ -28,9 +28,10 @@ namespace Console
         }
         public async Task MainAsync()
         {
-            var client = new DynastioClient("Dynastio_Api_Key");
-
-            var profile = await client.Database.GetUserProfileAsync("discord:0000000000000000").TryGet();
+            var client = new DynastioClient("Api_Key_Value");
+            var changelog = client.Main.ChangeLog;
+            var videos = await client.Main.GetFeaturedVideosAsync();
+            var profile = await client["nightly"].GetUserProfileAsync("google:112093004829153652749");
 
         }
 

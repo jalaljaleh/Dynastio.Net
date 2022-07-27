@@ -8,7 +8,7 @@ namespace Dynastio.Net
 {
     public static class TaskExtensions
     {
-        public static async Task<T> TryGet<T>(this Task<T> task)
+        internal static async Task<T> TryGet<T>(this Task<T> task)
         {
             try
             {

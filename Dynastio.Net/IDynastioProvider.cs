@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace Dynastio.Net
 {
-    public interface IDynastioProvider : IDisposable
+    public interface IDynastioProvider : ISocketDatabase, ISocketGame, IDisposable
     {
-        ISocketGame Game { get; set; }
-        ISocketDatabase Database { get; set; }
-        string Name { get; set; }
-        bool IsMain { get; set; }
+        string ProviderName { get; }
+        bool IsMainProvider { get; }
+        bool IsNightlyProvider { get; }
+        
+
     }
 }
