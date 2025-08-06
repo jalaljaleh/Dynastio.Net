@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+
+	<PropertyGroup>
+
+		<!-- Target Frameworks -->
+		<TargetFrameworks>net5.0;net46</TargetFrameworks>
+
+		<!-- Consider dropping net46 unless needed -->
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<NoWarn>$(NoWarn);1591</NoWarn>
+		
+		<!-- Output -->
+		<OutputType>Library</OutputType>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+		<!-- Package Metadata -->
+		<PackageId>Dynastio.Net</PackageId>
+		<Version>2.1.1</Version>
+		<Authors>Jalal Jaleh</Authors>
+		<Company>Halun™</Company>
+		<Product>Dynastio.Net</Product>
+		<Description>Dynastio.Net is a modern, high-performance .NET API client for interacting with the Dynast.io game services. Designed for developers and community toolmakers, this library provides seamless access to player stats, server data, leaderboards, and more—making it easy to build bots, dashboards, companion apps, or game-enhancing utilities.</Description>
+		<PackageTags>dynast;dynastio;dynast.io;game;api;client;dotnet</PackageTags>
+		<Copyright>© Jalal Jaleh 2022</Copyright>
+
+		<!-- Repository Info -->
+		<RepositoryUrl>https://github.com/JalalJaleh/Dynastio.Net</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+
+		<!-- NuGet Presentation -->
+		<PackageProjectUrl>https://github.com/JalalJaleh/Dynastio.Net</PackageProjectUrl>
+		<PackageIcon>https://github.com/jalaljaleh/Dynastio.Net/raw/master/logo.jpg</PackageIcon>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<!-- Signing -->
+		<SignAssembly>false</SignAssembly>
+		<DelaySign>false</DelaySign>
+	</PropertyGroup>
+
+
+
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+	</ItemGroup>
+
+
+</Project>
