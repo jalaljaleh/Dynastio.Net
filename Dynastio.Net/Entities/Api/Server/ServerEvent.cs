@@ -1,23 +1,65 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace Dynastio.Net
 {
+    /// <summary>
+    /// Represents an event taking place on a server.
+    /// </summary>
     public class ServerEvent
     {
-        public string id { get; set; }
-        public string header { get; set; }
-        public string description { get; set; }
-        public DateTime start_time { get; set; }
-        public DateTime finish_time { get; set; }
-        public Kind kind { get; set; }
+        [JsonProperty("id")]
+        /// <summary>
+        /// Unique identifier for the event.
+        /// </summary>
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Short title or heading for the event.
+        /// </summary>
+        [JsonProperty("header")]
+        public string Header { get; set; }
+
+        /// <summary>
+        /// Detailed description of the event.
+        /// </summary>
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        /// <summary>
+        /// Date and time when the event starts.
+        /// </summary>
+        [JsonProperty("start_time")]
+        public DateTime StartTime { get; set; }
+
+        /// <summary>
+        /// Date and time when the event ends.
+        /// </summary>
+        [JsonProperty("finish_time")]
+        public DateTime FinishTime { get; set; }
+
+        /// <summary>
+        /// Additional details about the type of event.
+        /// </summary>
+        [JsonProperty("kind")]
+        public Kind Kind { get; set; }
     }
+
+    /// <summary>
+    /// Defines the type and characteristics of an event.
+    /// </summary>
     public class Kind
     {
-        public string type { get; set; }
-        public uint coef { get; set; }
+        /// <summary>
+        /// Type of event (e.g., "PvP", "BossFight", "SpecialDrop").
+        /// </summary>
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        /// <summary>
+        /// Coefficient or multiplier representing the event's effect.
+        /// </summary>
+        [JsonProperty("coef")]
+        public uint Coef { get; set; }
     }
 }

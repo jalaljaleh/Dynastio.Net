@@ -1,215 +1,258 @@
-﻿
-using Dynastio.Net.Entities;
+﻿using Dynastio.Net.Entities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dynastio.Net
 {
-    public class DynastioApi : IDisposable
+    /// <summary>
+    /// Primary client for interacting with Dynastio’s REST endpoints.
+    /// Supports automatic caching, unified GET/POST logic, and JSON deserialization.
+    /// </summary>
+    public sealed class DynastioApi : IDisposable
     {
+        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
+        private static readonly string BaseAuthUrl = "https://auth.dynast.cloud";
+        private static readonly string BaseApiUrl = "https://dynast.cloud";
 
-        private const string BaseAuthUrl = "https://auth.dynast.cloud";
-        private readonly TimeSpan _timeout = TimeSpan.FromSeconds(20);
         private readonly ApiHttpClient _http;
-        private readonly Random _random = new Random();
+        private readonly Random _random = new();
 
-        private readonly Cacheable<List<Player>> _players;
-        private readonly Cacheable<List<Server>> _servers;
+        // Caches for hot endpoints
+        private readonly Cacheable<List<Player>> _playersAllCache;
+        private readonly Cacheable<List<Server>> _serversAllCache;
+        private readonly Cacheable<List<Team>> _teamsCache;
+
         private readonly Cacheable<Version> _versionCache;
-        private readonly Cacheable<string> _changelog;
-        private readonly Cacheable<List<Leaderboardcoin>> _leaderboardcoin;
-        private readonly Cacheable<List<Leaderboardscore>> _leaderboardscore;
-        private readonly Cacheable<List<FeaturedVideos>> _featuredVideos;
+        private readonly Cacheable<string> _changelogCache;
+        private readonly Cacheable<List<LeaderboardCoin>> _coinsCache;
+        private readonly Cacheable<List<LeaderboardScore>> _scoresCache;
+        private readonly Cacheable<List<FeaturedVideos>> _videosCache;
 
+        /// <summary>
+        /// Construct the API client using a "key:value" token.
+        /// </summary>
         public DynastioApi(string token)
         {
             var parts = token.Split(':');
-            var tokenKey = parts[0];
-            var tokenValue = parts[1];
+            var key = parts[0];
+            var secret = parts.Length == 2 ? parts[1] : throw new ArgumentException("Invalid token format");
+            var versionTag = Assembly.GetEntryAssembly()?
+                                       .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                                       .InformationalVersion ?? "(no version)";
 
             _http = new ApiHttpClient(
-                tokenKey,
-                tokenValue,
-                userAgent: $"dynastio.net/{GetVersionFromAssembly()}",
-                timeout: _timeout
+                key,
+                secret,
+                userAgent: $"dynastio.net/{versionTag}",
+                timeout: DefaultTimeout
             );
-            string GetVersionFromAssembly()
-            {
-                var version = Assembly.GetExecutingAssembly()
-                                      .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                                      ?.InformationalVersion;
 
-                return version ?? "(No version found)";
-            }
-
-            _players = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetPlayersAsync);
-            _servers = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), () => GetServersAsync(ServerType.AllServersWithAllPlayers));
-            _versionCache = new Cacheable<Version>(TimeSpan.FromSeconds(500), GetVersionAsync);
-            _changelog = new Cacheable<string>(TimeSpan.FromSeconds(500), GetChangeLogAsync);
-            _leaderboardcoin = new Cacheable<List<Leaderboardcoin>>(TimeSpan.FromSeconds(250), GetLeaderboardcoinsAsync);
-            _leaderboardscore = new Cacheable<List<Leaderboardscore>>(TimeSpan.FromSeconds(250), GetLeaderboardscoresAsync);
-            _featuredVideos = new Cacheable<List<FeaturedVideos>>(TimeSpan.FromMinutes(29), GetFeaturedVideosAsync);
+            // 30s caches for dynamic lists, longer for changelog/version
+            _playersAllCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetPlayersAsync, TimeSpan.FromSeconds(15));
+            _serversAllCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), () => GetServersInternalAsync(ServerType.AllServersWithAllPlayers), TimeSpan.FromSeconds(15));
+            _teamsCache = new Cacheable<List<Team>>(TimeSpan.FromSeconds(30), () => GetTeamsAsync(), TimeSpan.FromSeconds(15));
+              _versionCache = new Cacheable<Version>(TimeSpan.FromMinutes(8), () => FetchJsonAsync<Version>($"{BaseApiUrl}/version.json"));
+            _changelogCache = new Cacheable<string>(TimeSpan.FromMinutes(8), () => _http.GetStringAsync($"{BaseApiUrl}/changelog.txt"));
+            _coinsCache = new Cacheable<List<LeaderboardCoin>>(TimeSpan.FromSeconds(250), GetLeaderboardCoinsInternalAsync);
+            _scoresCache = new Cacheable<List<LeaderboardScore>>(TimeSpan.FromSeconds(250), GetLeaderboardScoresInternalAsync);
+            _videosCache = new Cacheable<List<FeaturedVideos>>(TimeSpan.FromMinutes(29), GetFeaturedVideosInternalAsync);
         }
 
+        /// <summary>Current published version of the Dynastio API.</summary>
         public Version Version => _versionCache.Value;
-        public List<Player> OnlinePlayers => _players.Value;
-        public List<Server> OnlineServers => _servers.Value;
-        public List<Leaderboardcoin> Leaderboardcoins => _leaderboardcoin.Value;
-        public List<Leaderboardscore> Leaderboardscore => _leaderboardscore.Value;
-        public string Changelog => _changelog.Value;
-        public List<FeaturedVideos> FeaturedVideos => _featuredVideos.Value;
 
-        public async Task<List<Server>> GetServersAsync(ServerType serverType)
+        /// <summary>All players across all servers (cached).</summary>
+        public List<Player> OnlinePlayers => _playersAllCache.Value;
+
+        /// <summary>All servers with full details (cached).</summary>
+        public List<Server> OnlineServers => _serversAllCache.Value;
+
+        /// <summary>Top coin leaderboard (cached).</summary>
+        public List<LeaderboardCoin> LeaderboardCoins => _coinsCache.Value;
+
+        /// <summary>Top score leaderboard (cached).</summary>
+        public List<LeaderboardScore> LeaderboardScores => _scoresCache.Value;
+
+        /// <summary>Latest changelog text (cached).</summary>
+        public string Changelog => _changelogCache.Value;
+
+        /// <summary>Featured videos (cached).</summary>
+        public List<FeaturedVideos> FeaturedVideos => _videosCache.Value;
+
+        /// <summary>
+        /// Fetches all servers of the specified type.
+        /// </summary>
+        public Task<List<Server>> GetServersAsync(ServerType type)
+            => GetServersInternalAsync(type);
+
+        /// <summary>
+        /// Fetches all players by aggregating across servers.
+        /// </summary>
+        public Task<List<Player>> GetPlayersAsync()
         {
-            string urlPart = serverType switch
+            return Task.FromResult(_serversAllCache.Value.SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>().ToList())
+                          .ToList());
+        }
+        /// <summary>
+        /// Fetches all teams by aggregating across players.
+        /// </summary>
+        public Task<List<Team>> GetTeamsAsync()
+        {
+            return Task.FromResult( _playersAllCache.Value
+                // Group by both Server and Team name
+                .GroupBy(p => new { p.Parent, TeamName = p.Team })
+                .Select(group => new Team
+                {
+                    Id = $"{group.Key.Parent?.Label}_{group.Key.TeamName}",
+                    Name = group.Key.TeamName,
+                    Server = group.Key.Parent,
+                    Players = group.ToList(),
+                    MembersCount = group.Count()
+                })
+                .ToList());
+
+        }
+        /// <summary>
+        /// Update a user's Discord rank on the Dynastio auth service.
+        /// </summary>
+        public Task<DiscordRank> UpdateDiscordRankAsync(string userId, int rank)
+            => PostJsonAsync<DiscordRank, DiscordRank>($"{BaseAuthUrl}/write_api/set_user_discord_rank?uid={userId}",
+                                                       new DiscordRank(rank));
+
+        /// <summary>Checks whether a given pin code is valid for a user.</summary>
+        public Task<bool> GetUserPincodeStatusAsync(string userId, string pin)
+            => FetchJsonAsync<bool>($"{BaseAuthUrl}/api/check_pincode?uid={userId}&pin={pin}");
+
+        /// <summary>Retrieves a user's overall rank.</summary>
+        public async Task<UserRank> GetUserRankAsync(string userId)
+        {
+            var data = await FetchJsonAsync<List<int>>($"{BaseAuthUrl}/api/get_user_rank?uid={userId}");
+            return new UserRank(data);
+        }
+
+        /// <summary>Retrieves a user's profile information.</summary>
+        public Task<Profile> GetUserProfileAsync(string userId)
+            => FetchJsonAsync<Profile>($"{BaseAuthUrl}/api/get_user_profile?uid={userId}");
+
+        /// <summary>Retrieves a user's player stats.</summary>
+        public async Task<PlayerStat> GetUserStatAsync(string userId)
+        {
+            var raw = await FetchJsonAsync<string>($"{BaseAuthUrl}/api/get_user_stat?uid={userId}");
+            var parsed = JsonConvert.DeserializeObject(raw).ToString();
+            return JsonConvert.DeserializeObject<PlayerStat>(parsed);
+        }
+
+        /// <summary>Retrieves a user's profile card (stats + chest + profile).</summary>
+        public async Task<ProfileCard> GetUserProfileCardAsync(string userId)
+        {
+            var wrapper = await FetchJsonAsync<ProfileCardEntity>($"{BaseAuthUrl}/api/get_user_card?uid={userId}");
+            // Stats
+            var statRaw = JsonConvert.DeserializeObject(wrapper.Stat).ToString();
+            var stat = JsonConvert.DeserializeObject<PlayerStat>(statRaw);
+            // Chest
+            var chest = ParseChest(wrapper.Chest);
+            return new ProfileCard { Profile = wrapper.Profile, Stat = stat, Chest = chest };
+        }
+
+        /// <summary>Retrieves a user's personal chest.</summary>
+        public async Task<PersonalChest> GetUserPersonalchestAsync(string userId)
+        {
+            var raw = await FetchJsonAsync<string>($"{BaseAuthUrl}/api/get_user_chest?uid={userId}");
+            return ParseChest(raw);
+        }
+
+        /// <summary>Gets daily/weekly/monthly ranks surrounding a user.</summary>
+        public async Task<UserSurroundingRank> GetUserSurroundingRankAsync(string userId)
+        {
+            var lists = await FetchJsonAsync<List<UserSurroundingRankRow[]>>($"{BaseAuthUrl}/leaderboard/surrounding?uid={userId}");
+            return new UserSurroundingRank(userId)
+            {
+                UsersRankDaily = lists[0].ToList(),
+                UsersRankWeekly = lists[1].ToList(),
+                UsersRankMonthly = lists[2].ToList()
+            };
+        }
+
+        /// <summary>Disposes the HTTP client.</summary>
+        public void Dispose() => _http.Dispose();
+
+
+        #region — Internal Helpers —
+
+        private Task<List<Server>> GetServersInternalAsync(ServerType type)
+        {
+            var suffix = type switch
             {
                 ServerType.AllServersWithAllPlayers => "all?full=true",
                 ServerType.PublicServersWithAllPlayers => "?full=true",
                 ServerType.AllServersWithTopPlayers => "all",
                 _ => ""
             };
-
-            var fullUrl = $"https://announcement-amsterdam-0-alpaca.dynast.cloud/{urlPart}&random={_random.Next()}";
-            var raw = await _http.GetStringAsync(fullUrl);
-            var data = JsonConvert.DeserializeObject<DataType<List<Server>>>(raw);
-            return data.Servers;
+            var url = $"{BaseAuthUrl}/api/servers/{suffix}&random={_random.Next()}";
+            return FetchJsonAsync<List<Server>>(url);
         }
 
-        public async Task<List<Player>> GetPlayersAsync()
-            => (await GetServersAsync(ServerType.AllServersWithAllPlayers))
-               .SelectMany(s => s.GetPlayers() ?? new List<Player>())
+        private async Task<List<LeaderboardCoin>> GetLeaderboardCoinsInternalAsync()
+            => (await FetchJsonAsync<LeaderboardCoin[]>($"{BaseAuthUrl}/api/get_top_by_coins"))
                .ToList();
 
-        public async Task<Version> GetVersionAsync()
-            => await _http.GetJsonAsync<Version>("https://dynast.cloud/version.json");
+        private async Task<List<LeaderboardScore>> GetLeaderboardScoresInternalAsync()
+            => await FetchJsonAsync<List<LeaderboardScore>>($"{BaseAuthUrl}/leaderboard/list_all");
 
-        public async Task<string> GetChangeLogAsync()
-            => await _http.GetStringAsync("https://dynast.cloud/changelog.txt");
+        private Task<List<FeaturedVideos>> GetFeaturedVideosInternalAsync()
+            => FetchJsonAsync<List<FeaturedVideos>>($"{BaseAuthUrl}/api/get_featured_videos");
 
-        public async Task<DiscordRank> UpdateDiscordRank(string accountId, int rank)
+        /// <summary>
+        /// Performs a GET and unwraps DataType{T}.data into T.
+        /// </summary>
+        private async Task<T> FetchJsonAsync<T>(string url, CancellationToken ct = default)
         {
-            var result = await _http.PostJsonAsync<DataType<DiscordRank>>(
-                $"{BaseAuthUrl}/write_api/set_user_discord_rank?uid={accountId}",
-                new DiscordRank(rank)
-            );
-            return result.data;
+            var wrapper = await _http.GetJsonAsync<DataType<T>>(url);
+            return wrapper.Data;
         }
 
-        public async Task<List<Leaderboardcoin>> GetLeaderboardcoinsAsync()
+        /// <summary>
+        /// Performs a POST with JSON and unwraps DataType{TResponse}.data into TResponse.
+        /// </summary>
+        private async Task<TResponse> PostJsonAsync<TResponse, TRequest>(string url, TRequest body, CancellationToken ct = default)
         {
-            var result = await _http.GetJsonAsync<DataType<Leaderboardcoin[]>>(
-                $"{BaseAuthUrl}/api/get_top_by_coins");
-            return result.data.ToList();
+            var wrapper = await _http.PostJsonAsync<DataType<TResponse>>(url, body);
+            return wrapper.Data;
         }
 
-        public async Task<bool> GetUserPincodeStatusAsync(string Id, string pincode)
+        /// <summary>
+        /// Parses a JSON‐encoded chest string into a Personalchest instance.
+        /// </summary>
+        private PersonalChest ParseChest(string rawJson)
         {
-            var result = await _http.GetJsonAsync<DataType<bool>>(
-                $"{BaseAuthUrl}/api/check_pincode?uid={Id}&pin={pincode}");
-            return result.data;
+            var decoded = JsonConvert.DeserializeObject(rawJson).ToString();
+            var itemsArr = JObject.Parse(decoded)
+                                  .SelectToken("items")?
+                                  .ToObject<List<JArray>>()
+                            ?? new List<JArray>();
+
+            var items = itemsArr
+                .Select(arr => new PersonalChestItem
+                {
+                    Index = arr[0].ToObject<int>(),
+                    ItemType = (ItemType)arr[1].ToObject<int>(),
+                    Count = arr[2].ToObject<int>(),
+                    Durability = arr[3].ToObject<int>(),
+                    Details = arr[4].ToObject<string>(),
+                    OwnerId = arr[5].ToObject<string>(),
+                    Token = arr[6].ToObject<string>()
+                })
+                .ToList();
+
+            return new PersonalChest(items);
         }
 
-        public async Task<List<Leaderboardscore>> GetLeaderboardscoresAsync()
-        {
-            var result = await _http.GetJsonAsync<DataType<List<Leaderboardscore>>>(
-                $"{BaseAuthUrl}/leaderboard/list_all");
-            return result.data;
-        }
-
-        public async Task<UserRank> GetUserRankAsync(string playerId)
-        {
-            var result = await _http.GetJsonAsync<DataType<List<int>>>(
-                $"{BaseAuthUrl}/api/get_user_rank?uid={playerId}");
-            return new UserRank(result.data);
-        }
-
-        public async Task<PlayerStat> GetUserStatAsync(string playerId)
-        {
-            var result = await _http.GetJsonAsync<DataType<string>>(
-                $"{BaseAuthUrl}/api/get_user_stat?uid={playerId}");
-            var clear = JsonConvert.DeserializeObject(result.data).ToString();
-            return JsonConvert.DeserializeObject<PlayerStat>(clear);
-        }
-
-        public async Task<ProfileCard> GetUserProfileCardAsync(string playerId)
-        {
-            var result = await _http.GetJsonAsync<DataType<ProfileCardEntitiy>>(
-                $"{BaseAuthUrl}/api/get_user_card?uid={playerId}");
-
-            var statClear = JsonConvert.DeserializeObject(result.data.Stat).ToString();
-            var stat = JsonConvert.DeserializeObject<PlayerStat>(statClear);
-
-            var chestClear = JsonConvert.DeserializeObject(result.data.Chest).ToString();
-            var chest = ParseToChest(chestClear);
-
-            return new ProfileCard
-            {
-                Profile = result.data.Profile,
-                Chest = chest,
-                Stat = stat
-            };
-        }
-
-        public async Task<Profile> GetUserProfileAsync(string playerId)
-        {
-            var result = await _http.GetJsonAsync<DataType<Profile>>(
-                $"{BaseAuthUrl}/api/get_user_profile?uid={playerId}");
-            return result.data;
-        }
-
-        public async Task<Personalchest> GetUserPersonalchestAsync(string playerId)
-        {
-            var result = await _http.GetJsonAsync<DataType<string>>(
-                $"{BaseAuthUrl}/api/get_user_chest?uid={playerId}");
-            return ParseToChest(result.data);
-        }
-
-        private Personalchest ParseToChest(string data)
-        {
-            var clear = JsonConvert.DeserializeObject(data).ToString();
-            var itemsArr = JsonConvert.DeserializeObject<JObject>(clear)
-                                        .SelectToken("items")
-                                        .ToArray();
-
-            var items = itemsArr.Select(item => new PersonalChestItem
-            {
-                index = (int)item[0],
-                ItemType = (ItemType)(int)item[1],
-                Count = (int)item[2],
-                Durablity = (int)item[3],
-                Details = (string)item[4],
-                OwnerID = (string)item[5],
-                Token = (string)item[6]
-            }).ToList();
-
-            return new Personalchest(items);
-        }
-
-        public async Task<UserSurroundingRank> GetUserSurroundingRankAsync(string playerId)
-        {
-            var result = await _http.GetJsonAsync<DataType<List<UserSurroundingRankRow[]>>>(
-                $"{BaseAuthUrl}/leaderboard/surrounding?uid={playerId}");
-
-            return new UserSurroundingRank(playerId)
-            {
-                UsersRankDaily = result.data[0].ToList(),
-                UsersRankWeekly = result.data[1].ToList(),
-                UsersRankMontly = result.data[2].ToList()
-            };
-        }
-
-        public async Task<List<FeaturedVideos>> GetFeaturedVideosAsync()
-        {
-            var result = await _http.GetJsonAsync<DataType<List<FeaturedVideos>>>(
-                $"{BaseAuthUrl}/api/get_featured_videos");
-            return result.data;
-        }
-
-        public void Dispose() => _http.Dispose();
+        #endregion
     }
 }

@@ -18,7 +18,7 @@
 
 		<!-- Package Metadata -->
 		<PackageId>Dynastio.Net</PackageId>
-		<Version>2.1.1</Version>
+		<Version>2.1.2</Version>
 		<Authors>Jalal Jaleh</Authors>
 		<Company>Halun™</Company>
 		<Product>Dynastio.Net</Product>
@@ -32,13 +32,14 @@
 
 		<!-- NuGet Presentation -->
 		<PackageProjectUrl>https://github.com/JalalJaleh/Dynastio.Net</PackageProjectUrl>
-		<PackageIcon>https://github.com/jalaljaleh/Dynastio.Net/raw/master/logo.jpg</PackageIcon>
+		<PackageIconUrl>https://github.com/jalaljaleh/Dynastio.Net/raw/master/dynastio.png</PackageIconUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 
 		<!-- Signing -->
 		<SignAssembly>false</SignAssembly>
 		<DelaySign>false</DelaySign>
-	</PropertyGroup>
+	
+</PropertyGroup>
 
 
 

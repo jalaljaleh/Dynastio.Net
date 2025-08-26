@@ -1,42 +1,154 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dynastio.Net.Entities
 {
+    /// <summary>
+    /// Caches a value fetched asynchronously, refreshing it only after a given interval.
+    /// If a fetch fails, the cache will not immediately retry until a configurable cooldown elapses.
+    /// </summary>
     internal class Cacheable<T>
     {
-        private Func<Task<T>> _updateFunc;
-        private TimeSpan _time;
-        public Cacheable(TimeSpan millisecondsUpdateTime, Func<Task<T>> updateFunc)
+        private readonly Func<Task<T>> _factory;
+        private readonly TimeSpan _cacheDuration;
+        private readonly TimeSpan _errorCooldown;
+        private readonly object _sync = new object();
+
+        private DateTime _lastSuccess = DateTime.MinValue;
+        private DateTime _lastError = DateTime.MinValue;
+        private T _cache = default!;
+
+        /// <summary>
+        /// Creates a new Cacheable&lt;T&gt;.
+        /// </summary>
+        /// <param name="cacheDuration">
+        /// How long a successful value remains fresh before a new fetch is attempted.
+        /// </param>
+        /// <param name="factory">
+        /// Async function to fetch the up-to-date value.
+        /// </param>
+        /// <param name="errorCooldown">
+        /// After a fetch error, how long to wait before re-trying. Defaults to cacheDuration.
+        /// </param>
+        public Cacheable(
+            TimeSpan cacheDuration,
+            Func<Task<T>> factory,
+            TimeSpan? errorCooldown = null)
         {
-            _updateFunc = updateFunc;
-            _time = millisecondsUpdateTime;
-            _valueTime = DateTime.MinValue;
+            _cacheDuration = cacheDuration;
+            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+            _errorCooldown = errorCooldown ?? cacheDuration;
         }
-        private DateTime _valueTime;
-        private T _value;
-        public T Value
+
+        /// <summary>
+        /// Gets the cached value, fetching a fresh one if:
+        /// - we've never fetched yet, OR
+        /// - cacheDuration has elapsed since the last success AND
+        ///   we're not still within the errorCooldown after a failure.
+        /// </summary>
+        public T Value => GetValue();
+
+        /// <summary>
+        /// Synchronously returns the cached value, performing a blocking fetch if needed.
+        /// </summary>
+        public T GetValue()
         {
-            get
+            var now = DateTime.UtcNow;
+            bool shouldFetch;
+
+            lock (_sync)
             {
-                if ((DateTime.UtcNow - _valueTime).TotalMilliseconds > _time.TotalMilliseconds || _value is null)
+                var expired = (now - _lastSuccess) >= _cacheDuration;
+                var canRetry = (now - _lastError) >= _errorCooldown;
+                var neverFetched = _lastSuccess == DateTime.MinValue;
+
+                shouldFetch = (neverFetched || expired) && canRetry;
+            }
+
+            if (shouldFetch)
+            {
+                try
                 {
-                    _value = _updateFunc().GetAwaiter().GetResult();
-                    _valueTime = DateTime.UtcNow;
+                    // Perform the fetch outside the lock to avoid deadlocks
+                    var result = _factory().GetAwaiter().GetResult();
+
+                    lock (_sync)
+                    {
+                        _cache = result;
+                        _lastSuccess = DateTime.UtcNow;
+                    }
                 }
-                return _value;
+                catch
+                {
+                    lock (_sync)
+                    {
+                        _lastError = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            lock (_sync)
+            {
+                return _cache;
             }
         }
 
+        /// <summary>
+        /// Asynchronous version of GetValue: avoids blocking threads on I/O.
+        /// </summary>
+        public async Task<T> GetValueAsync(CancellationToken cancellationToken = default)
+        {
+            var now = DateTime.UtcNow;
+            bool shouldFetch;
 
+            lock (_sync)
+            {
+                var expired = (now - _lastSuccess) >= _cacheDuration;
+                var canRetry = (now - _lastError) >= _errorCooldown;
+                var neverFetched = _lastSuccess == DateTime.MinValue;
+
+                shouldFetch = (neverFetched || expired) && canRetry;
+            }
+
+            if (shouldFetch)
+            {
+                try
+                {
+                    var result = await _factory().ConfigureAwait(false);
+
+                    lock (_sync)
+                    {
+                        _cache = result;
+                        _lastSuccess = DateTime.UtcNow;
+                    }
+                }
+                catch
+                {
+                    lock (_sync)
+                    {
+                        _lastError = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            lock (_sync)
+            {
+                return _cache;
+            }
+        }
+
+        /// <summary>
+        /// Resets the cache, forcing the next Value/GetValueAsync call to fetch anew.
+        /// </summary>
+        public void Invalidate()
+        {
+            lock (_sync)
+            {
+                _lastSuccess = DateTime.MinValue;
+                _lastError = DateTime.MinValue;
+                _cache = default!;
+            }
+        }
     }
-
 }
-
-
-
-

@@ -5,94 +5,160 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dynastio.Net
 {
-    internal class ApiHttpClient : IDisposable
+    /// <summary>
+    /// Lightweight HTTP client for Dynastio API calls.
+    /// Handles JSON serialization, default headers, and error checking.
+    /// </summary>
+    internal sealed class ApiHttpClient : IDisposable
     {
-        private readonly HttpClient _client;
+        private static readonly MediaTypeWithQualityHeaderValue JsonMediaType = new MediaTypeWithQualityHeaderValue("application/json");
+        private readonly HttpClient _http;
         private readonly JsonSerializerSettings _jsonSettings;
 
+        /// <summary>
+        /// Initializes a new instance with bearer authentication, GZip/Deflate decompression,
+        /// a custom User-Agent header, and a per-request timeout.
+        /// </summary>
+        /// <param name="tokenKey">Auth header name (e.g. "Authorization").</param>
+        /// <param name="tokenValue">Auth token value.</param>
+        /// <param name="userAgent">Value for the User-Agent header.</param>
+        /// <param name="timeout">HttpClient timeout for each request.</param>
         public ApiHttpClient(string tokenKey, string tokenValue, string userAgent, TimeSpan timeout)
         {
             var handler = new HttpClientHandler
             {
-                AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
-                UseDefaultCredentials = true
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                UseDefaultCredentials = false
             };
 
-            _client = new HttpClient(handler, false)
+            _http = new HttpClient(handler, disposeHandler: true)
             {
                 Timeout = timeout
             };
 
-            //  _client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(userAgent));
-            _client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
-            _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _client.DefaultRequestHeaders.Add(tokenKey, tokenValue);
+            // Bearer auth in a single header
+            _http.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", $"{tokenKey}:{tokenValue}");
+            _http.DefaultRequestHeaders.Add(tokenKey, tokenValue);
 
+            // Standard headers
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            _http.DefaultRequestHeaders.Accept.Add(JsonMediaType);
+
+            // JSON: camelCase, no automatic date parsing overhead
             _jsonSettings = new JsonSerializerSettings
             {
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                DateParseHandling = DateParseHandling.None
             };
         }
 
-        public async Task<string> GetStringAsync(string url)
+        /// <summary>
+        /// Issues a GET request and returns the raw response body.
+        /// </summary>
+        /// <param name="uri">Full request URI.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        public async Task<string> GetStringAsync(
+            string uri,
+            CancellationToken cancellationToken = default)
         {
-            using var response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+            using var res = await _http.GetAsync(uri, cancellationToken)
+                                       .ConfigureAwait(false);
+            res.EnsureSuccessStatusCode();
+            return await res.Content.ReadAsStringAsync()
+                          .ConfigureAwait(false);
         }
 
-        public async Task<T> GetJsonAsync<T>(string url) where T : class, new()
+        /// <summary>
+        /// Issues a GET request and deserializes the JSON response to T.
+        /// </summary>
+        public async Task<T> GetJsonAsync<T>(
+            string uri,
+            CancellationToken cancellationToken = default)
         {
-            var json = await GetStringAsync(url);
-            return JsonConvert.DeserializeObject<T>(json, _jsonSettings);
+            var json = await GetStringAsync(uri, cancellationToken)
+                         .ConfigureAwait(false);
+            return JsonConvert.DeserializeObject<T>(json, _jsonSettings)!;
         }
 
-        public async Task<string> PostStringAsync(string url, object body)
+        /// <summary>
+        /// Issues a POST request with a JSON body and returns the raw response body.
+        /// </summary>
+        public async Task<string> PostStringAsync(
+            string uri,
+            object payload,
+            CancellationToken cancellationToken = default)
         {
-            var content = new StringContent(
-                JsonConvert.SerializeObject(body, _jsonSettings),
-                Encoding.UTF8,
-                "application/json"
-            );
-
-            using var response = await _client.PostAsync(url, content);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+            using var content = Serialize(payload);
+            using var res = await _http.PostAsync(uri, content, cancellationToken)
+                                           .ConfigureAwait(false);
+            res.EnsureSuccessStatusCode();
+            return await res.Content.ReadAsStringAsync()
+                          .ConfigureAwait(false);
         }
 
-        public async Task<T> PostJsonAsync<T>(string url, object body) where T : class, new()
+        /// <summary>
+        /// Issues a POST request with a JSON body and deserializes the JSON response to T.
+        /// </summary>
+        public async Task<T> PostJsonAsync<T>(
+            string uri,
+            object payload,
+            CancellationToken cancellationToken = default)
         {
-            var json = await PostStringAsync(url, body);
-            return JsonConvert.DeserializeObject<T>(json, _jsonSettings);
+            var json = await PostStringAsync(uri, payload, cancellationToken)
+                         .ConfigureAwait(false);
+            return JsonConvert.DeserializeObject<T>(json, _jsonSettings)!;
         }
 
-        public async Task<string> PutAsync(string url, object body)
+        /// <summary>
+        /// Issues a PUT request with a JSON body and returns the raw response body.
+        /// </summary>
+        public async Task<string> PutStringAsync(
+            string uri,
+            object payload,
+            CancellationToken cancellationToken = default)
         {
-            var content = new StringContent(
-                JsonConvert.SerializeObject(body, _jsonSettings),
-                Encoding.UTF8,
-                "application/json"
-            );
-
-            using var response = await _client.PutAsync(url, content);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+            using var content = Serialize(payload);
+            using var res = await _http.PutAsync(uri, content, cancellationToken)
+                                           .ConfigureAwait(false);
+            res.EnsureSuccessStatusCode();
+            return await res.Content.ReadAsStringAsync()
+                          .ConfigureAwait(false);
         }
 
-        public async Task<string> DeleteAsync(string url)
+        /// <summary>
+        /// Issues a DELETE request and returns the raw response body.
+        /// </summary>
+        public async Task<string> DeleteStringAsync(
+            string uri,
+            CancellationToken cancellationToken = default)
         {
-            using var response = await _client.DeleteAsync(url);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+            using var res = await _http.DeleteAsync(uri, cancellationToken)
+                                       .ConfigureAwait(false);
+            res.EnsureSuccessStatusCode();
+            return await res.Content.ReadAsStringAsync()
+                          .ConfigureAwait(false);
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Releases the underlying HttpClient.
+        /// </summary>
+        public void Dispose() => _http.Dispose();
+
+
+        #region Private Helpers
+
+        private StringContent Serialize(object payload)
         {
-            _client.Dispose();
+            var json = JsonConvert.SerializeObject(payload, _jsonSettings);
+            return new StringContent(json, Encoding.UTF8, JsonMediaType.MediaType);
         }
+
+        #endregion
     }
 }

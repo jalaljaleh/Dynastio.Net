@@ -1,26 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dynastio.Net
 {
-    public class Personalchest
+    /// <summary>
+    /// Represents a player's personal chest (inventory storage) in Dynast.io.
+    /// Holds a collection of <see cref="PersonalChestItem"/> objects and
+    /// provides utility methods for quick lookup.
+    /// </summary>
+    public class PersonalChest
     {
-        public Personalchest(List<PersonalChestItem> items)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PersonalChest"/> class with the given items.
+        /// </summary>
+        /// <param name="items">A list of items stored in the personal chest.</param>
+        public PersonalChest(List<PersonalChestItem> items)
         {
-            Items = items;
+            Items = items ?? new List<PersonalChestItem>();
         }
+
+        /// <summary>
+        /// The list of items currently in the chest.
+        /// </summary>
         public List<PersonalChestItem> Items { get; set; } = new List<PersonalChestItem>();
+
+        /// <summary>
+        /// Converts the chest's item list into a dictionary keyed by the item's slot index.
+        /// </summary>
+        /// <returns>
+        /// A dictionary where:
+        /// <list type="bullet">
+        ///     <item><description>Key = Item slot index</description></item>
+        ///     <item><description>Value = The <see cref="PersonalChestItem"/> in that slot</description></item>
+        /// </list>
+        /// </returns>
         public Dictionary<int, PersonalChestItem> GetAsDictionary()
         {
             var chestItems = new Dictionary<int, PersonalChestItem>();
+
             foreach (var item in Items)
             {
-                chestItems.Add(item.index, item);
+                // Use safe PascalCase property reference
+                // Avoids exception if an index is duplicated
+                if (!chestItems.ContainsKey(item.Index))
+                {
+                    chestItems.Add(item.Index, item);
+                }
             }
+
             return chestItems;
         }
     }
