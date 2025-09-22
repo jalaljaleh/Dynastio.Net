@@ -7,11 +7,14 @@
 
 using Dynastio.Net;
 
-DynastioApi client = new DynastioApi("key:value)");
+DynastioApi client = new DynastioApi("sdf:Sdfs");
 
 
-var s = client.OnlineTopPlayers;
-var t = client.OnlineServers;
+var s = client.OnlinePlayers;
+var ss = client.OnlineServers;
+var sf = client.OnlineServersWithPlayers;
+var sg = client.OnlineTopPlayers;
+
 
 var m = await client.GetUserProfileAsync("discord:567315648531791872");
 

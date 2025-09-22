@@ -62,8 +62,8 @@ namespace Dynastio.Net
             _onlinePlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetPlayersAsync, TimeSpan.FromSeconds(15));
             _onlineTopPlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetTopPlayersAsync, TimeSpan.FromSeconds(15));
 
-            _onlineServersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), () => GetServersInternalAsync(ServerType.PublicServersWithTopPlayers), TimeSpan.FromSeconds(15));
-            _onlineServersWithPlayersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), () => GetServersInternalAsync(ServerType.AllServersWithAllPlayers), TimeSpan.FromSeconds(15));
+            _onlineServersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), async () => await GetServersInternalAsync(ServerType.PublicServersWithTopPlayers), TimeSpan.FromSeconds(15));
+            _onlineServersWithPlayersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), async () => await GetServersInternalAsync(ServerType.AllServersWithAllPlayers), TimeSpan.FromSeconds(15));
 
             _teamsCache = new Cacheable<List<Team>>(TimeSpan.FromSeconds(30), () => GetTeamsAsync(), TimeSpan.FromSeconds(15));
             _versionCache = new Cacheable<Version>(TimeSpan.FromMinutes(8), () => FetchJsonAsync<Version>($"{BaseApiUrl}/version.json"));
@@ -109,25 +109,47 @@ namespace Dynastio.Net
         /// <summary>
         /// Fetches all players by aggregating across servers.
         /// </summary>
-        public Task<List<Player>> GetPlayersAsync()
+        public async Task<List<Player>> GetPlayersAsync()
         {
-            return Task.FromResult(_onlineServersWithPlayersCache.Value.SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>().ToList())
-                          .ToList());
+            var servers = await GetServersInternalAsync(ServerType.AllServersWithAllPlayers);
+
+            _onlineServersWithPlayersCache.Update(servers);
+
+            return _onlineServersWithPlayersCache
+                 .Value
+                 .SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>())
+             .ToList();
         }
         /// <summary>
         /// Fetches top players by aggregating across servers.
         /// </summary>
-        public Task<List<Player>> GetTopPlayersAsync()
+        public async Task<List<Player>> GetTopPlayersAsync()
         {
-            return Task.FromResult(_onlineServersCache.Value.SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>().ToList())
-                          .ToList());
+            var servers = await GetServersInternalAsync(ServerType.AllServersWithTopPlayers);
+
+            _onlineServersCache.Update(servers);
+
+            return _onlineServersCache
+                 .Value
+                 .Select(s => new Player()
+                 {
+                     Level = s.TopPlayerLevel,
+                     Nickname = s.TopPlayerName,
+                     Score = s.TopPlayerScore,
+                     Parent = s,
+                 })
+             .ToList();
         }
         /// <summary>
         /// Fetches all teams by aggregating across players.
         /// </summary>
-        public Task<List<Team>> GetTeamsAsync()
+        public async Task<List<Team>> GetTeamsAsync()
         {
-            return Task.FromResult(_onlinePlayersCache.Value
+            var servers = await GetServersInternalAsync(ServerType.AllServersWithAllPlayers);
+
+            _onlineServersWithPlayersCache.Update(servers);
+
+            return _onlinePlayersCache.Value
                 // Group by both Server and Team name
                 .GroupBy(p => new { p.Parent, TeamName = p.Team })
                 .Select(group => new Team
@@ -138,7 +160,7 @@ namespace Dynastio.Net
                     Players = group.ToList(),
                     MembersCount = group.Count()
                 })
-                .ToList());
+                .ToList();
 
         }
         /// <summary>
@@ -213,7 +235,7 @@ namespace Dynastio.Net
             var suffix = type switch
             {
                 ServerType.AllServersWithTopPlayers => "?all",
-                ServerType.PublicServersWithTopPlayers => "",
+                ServerType.PublicServersWithTopPlayers => "?all",
 
                 ServerType.AllServersWithAllPlayers => "all?full=true",
                 ServerType.PublicServersWithAllPlayers => "?full=true",

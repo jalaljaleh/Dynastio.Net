@@ -117,7 +117,11 @@ namespace Dynastio.Net.Entities
 
             return _cache;
         }
-
+        public void Update(T data)
+        {
+            _cache = data;
+            _lastSuccess = DateTime.UtcNow;
+        }
         /// <summary>
         /// Resets the cache, forcing the next Value/GetValueAsync call to fetch anew.
         /// </summary>
