@@ -57,14 +57,12 @@ namespace Dynastio.Net.Entities
             var now = DateTime.UtcNow;
             bool shouldFetch;
 
-            lock (_sync)
-            {
-                var expired = (now - _lastSuccess) >= _cacheDuration;
-                var canRetry = (now - _lastError) >= _errorCooldown;
-                var neverFetched = _lastSuccess == DateTime.MinValue;
+            var expired = (now - _lastSuccess) >= _cacheDuration;
+            var canRetry = (now - _lastError) >= _errorCooldown;
+            var neverFetched = _lastSuccess == DateTime.MinValue;
 
-                shouldFetch = (neverFetched || expired) && canRetry;
-            }
+            shouldFetch = (neverFetched || expired) && canRetry;
+
 
             if (shouldFetch)
             {
@@ -73,25 +71,18 @@ namespace Dynastio.Net.Entities
                     // Perform the fetch outside the lock to avoid deadlocks
                     var result = _factory().GetAwaiter().GetResult();
 
-                    lock (_sync)
-                    {
-                        _cache = result;
-                        _lastSuccess = DateTime.UtcNow;
-                    }
+                    _cache = result;
+                    _lastSuccess = DateTime.UtcNow;
                 }
                 catch
                 {
-                    lock (_sync)
-                    {
-                        _lastError = DateTime.UtcNow;
-                    }
+                    _lastError = DateTime.UtcNow;
+
                 }
             }
 
-            lock (_sync)
-            {
-                return _cache;
-            }
+            return _cache;
+
         }
 
         /// <summary>
@@ -102,14 +93,12 @@ namespace Dynastio.Net.Entities
             var now = DateTime.UtcNow;
             bool shouldFetch;
 
-            lock (_sync)
-            {
-                var expired = (now - _lastSuccess) >= _cacheDuration;
-                var canRetry = (now - _lastError) >= _errorCooldown;
-                var neverFetched = _lastSuccess == DateTime.MinValue;
+            var expired = (now - _lastSuccess) >= _cacheDuration;
+            var canRetry = (now - _lastError) >= _errorCooldown;
+            var neverFetched = _lastSuccess == DateTime.MinValue;
 
-                shouldFetch = (neverFetched || expired) && canRetry;
-            }
+            shouldFetch = (neverFetched || expired) && canRetry;
+
 
             if (shouldFetch)
             {
@@ -117,25 +106,16 @@ namespace Dynastio.Net.Entities
                 {
                     var result = await _factory().ConfigureAwait(false);
 
-                    lock (_sync)
-                    {
-                        _cache = result;
-                        _lastSuccess = DateTime.UtcNow;
-                    }
+                    _cache = result;
+                    _lastSuccess = DateTime.UtcNow;
                 }
                 catch
                 {
-                    lock (_sync)
-                    {
-                        _lastError = DateTime.UtcNow;
-                    }
+                    _lastError = DateTime.UtcNow;
                 }
             }
 
-            lock (_sync)
-            {
-                return _cache;
-            }
+            return _cache;
         }
 
         /// <summary>

@@ -33,8 +33,8 @@ namespace Dynastio.Net
             // Scaling factor to ensure the reward reaches ~10,000 at MaxLevel
             double a = 10000 / (Math.Exp(1) - 1);
 
-            // Apply exponential growth formula and round to nearest whole number
-            return Math.Round(a * (Math.Exp(b * level) - 1));
+            // Apply exponential growth formula, halve it, and round to nearest whole number
+            return Math.Round((a * (Math.Exp(b * level) - 1)) / 2);
         }
     }
 }

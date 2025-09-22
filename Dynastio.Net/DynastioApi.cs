@@ -24,8 +24,13 @@ namespace Dynastio.Net
         private readonly Random _random = new();
 
         // Caches for hot endpoints
-        private readonly Cacheable<List<Player>> _playersAllCache;
-        private readonly Cacheable<List<Server>> _serversAllCache;
+        private readonly Cacheable<List<Player>> _onlinePlayersCache;
+        private readonly Cacheable<List<Server>> _onlineServersCache;
+
+        private readonly Cacheable<List<Player>> _onlineTopPlayersCache;
+        private readonly Cacheable<List<Server>> _onlineServersWithPlayersCache;
+
+
         private readonly Cacheable<List<Team>> _teamsCache;
 
         private readonly Cacheable<Version> _versionCache;
@@ -54,24 +59,35 @@ namespace Dynastio.Net
             );
 
             // 30s caches for dynamic lists, longer for changelog/version
-            _playersAllCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetPlayersAsync, TimeSpan.FromSeconds(15));
-            _serversAllCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), () => GetServersInternalAsync(ServerType.AllServersWithAllPlayers), TimeSpan.FromSeconds(15));
+            _onlinePlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetPlayersAsync, TimeSpan.FromSeconds(15));
+            _onlineTopPlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetTopPlayersAsync, TimeSpan.FromSeconds(15));
+
+            _onlineServersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), () => GetServersInternalAsync(ServerType.PublicServersWithTopPlayers), TimeSpan.FromSeconds(15));
+            _onlineServersWithPlayersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), () => GetServersInternalAsync(ServerType.AllServersWithAllPlayers), TimeSpan.FromSeconds(15));
+
             _teamsCache = new Cacheable<List<Team>>(TimeSpan.FromSeconds(30), () => GetTeamsAsync(), TimeSpan.FromSeconds(15));
-              _versionCache = new Cacheable<Version>(TimeSpan.FromMinutes(8), () => FetchJsonAsync<Version>($"{BaseApiUrl}/version.json"));
+            _versionCache = new Cacheable<Version>(TimeSpan.FromMinutes(8), () => FetchJsonAsync<Version>($"{BaseApiUrl}/version.json"));
             _changelogCache = new Cacheable<string>(TimeSpan.FromMinutes(8), () => _http.GetStringAsync($"{BaseApiUrl}/changelog.txt"));
             _coinsCache = new Cacheable<List<LeaderboardCoin>>(TimeSpan.FromSeconds(250), GetLeaderboardCoinsInternalAsync);
             _scoresCache = new Cacheable<List<LeaderboardScore>>(TimeSpan.FromSeconds(250), GetLeaderboardScoresInternalAsync);
             _videosCache = new Cacheable<List<FeaturedVideos>>(TimeSpan.FromMinutes(29), GetFeaturedVideosInternalAsync);
         }
 
+        /// <summary>All teams across all servers (cached).</summary>
+        public List<Team> Teams => _teamsCache.Value;
+
         /// <summary>Current published version of the Dynastio API.</summary>
         public Version Version => _versionCache.Value;
 
         /// <summary>All players across all servers (cached).</summary>
-        public List<Player> OnlinePlayers => _playersAllCache.Value;
+        public List<Player> OnlinePlayers => _onlinePlayersCache.Value;
+        /// <summary>All Top players across public servers (cached).</summary>
+        public List<Player> OnlineTopPlayers => _onlineTopPlayersCache.Value;
 
-        /// <summary>All servers with full details (cached).</summary>
-        public List<Server> OnlineServers => _serversAllCache.Value;
+        /// <summary>All servers with top players(cached).</summary>
+        public List<Server> OnlineServers => _onlineServersCache.Value;
+        /// <summary>All servers with full details and full players (cached).</summary>
+        public List<Server> OnlineServersWithPlayers => _onlineServersWithPlayersCache.Value;
 
         /// <summary>Top coin leaderboard (cached).</summary>
         public List<LeaderboardCoin> LeaderboardCoins => _coinsCache.Value;
@@ -88,15 +104,22 @@ namespace Dynastio.Net
         /// <summary>
         /// Fetches all servers of the specified type.
         /// </summary>
-        public Task<List<Server>> GetServersAsync(ServerType type)
-            => GetServersInternalAsync(type);
+        public async Task<List<Server>> GetServersAsync(ServerType type) => await GetServersInternalAsync(type);
 
         /// <summary>
         /// Fetches all players by aggregating across servers.
         /// </summary>
         public Task<List<Player>> GetPlayersAsync()
         {
-            return Task.FromResult(_serversAllCache.Value.SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>().ToList())
+            return Task.FromResult(_onlineServersWithPlayersCache.Value.SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>().ToList())
+                          .ToList());
+        }
+        /// <summary>
+        /// Fetches top players by aggregating across servers.
+        /// </summary>
+        public Task<List<Player>> GetTopPlayersAsync()
+        {
+            return Task.FromResult(_onlineServersCache.Value.SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>().ToList())
                           .ToList());
         }
         /// <summary>
@@ -104,7 +127,7 @@ namespace Dynastio.Net
         /// </summary>
         public Task<List<Team>> GetTeamsAsync()
         {
-            return Task.FromResult( _playersAllCache.Value
+            return Task.FromResult(_onlinePlayersCache.Value
                 // Group by both Server and Team name
                 .GroupBy(p => new { p.Parent, TeamName = p.Team })
                 .Select(group => new Team
@@ -185,17 +208,22 @@ namespace Dynastio.Net
 
         #region — Internal Helpers —
 
-        private Task<List<Server>> GetServersInternalAsync(ServerType type)
+        private async Task<List<Server>> GetServersInternalAsync(ServerType type)
         {
             var suffix = type switch
             {
+                ServerType.AllServersWithTopPlayers => "?all",
+                ServerType.PublicServersWithTopPlayers => "",
+
                 ServerType.AllServersWithAllPlayers => "all?full=true",
                 ServerType.PublicServersWithAllPlayers => "?full=true",
-                ServerType.AllServersWithTopPlayers => "all",
+
                 _ => ""
             };
-            var url = $"{BaseAuthUrl}/api/servers/{suffix}&random={_random.Next()}";
-            return FetchJsonAsync<List<Server>>(url);
+
+            var url = $"https://announcement-amsterdam-0-alpaca.dynast.cloud/{suffix}&random={_random.Next()}";
+            var wrapper = await _http.GetJsonAsync<DataType<List<Server>>>(url);
+            return wrapper.Servers;
         }
 
         private async Task<List<LeaderboardCoin>> GetLeaderboardCoinsInternalAsync()

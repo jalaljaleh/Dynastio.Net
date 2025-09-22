@@ -7,11 +7,12 @@
 
 using Dynastio.Net;
 
-DynastioApi client = new DynastioApi("token");
+DynastioApi client = new DynastioApi("key:value)");
 
 
-var s = client.FeaturedVideos;
-var t = client.LeaderboardScores;
+var s = client.OnlineTopPlayers;
+var t = client.OnlineServers;
+
 var m = await client.GetUserProfileAsync("discord:567315648531791872");
 
 //List<Server> servers;
