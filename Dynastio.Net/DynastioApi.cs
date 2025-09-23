@@ -59,8 +59,8 @@ namespace Dynastio.Net
             );
 
             // 30s caches for dynamic lists, longer for changelog/version
-            _onlinePlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetPlayersAsync, TimeSpan.FromSeconds(15));
-            _onlineTopPlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), GetTopPlayersAsync, TimeSpan.FromSeconds(15));
+            _onlinePlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), async () => await GetPlayersAsync(true), TimeSpan.FromSeconds(15));
+            _onlineTopPlayersCache = new Cacheable<List<Player>>(TimeSpan.FromSeconds(30), async () => await GetTopPlayersAsync(true), TimeSpan.FromSeconds(15));
 
             _onlineServersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), async () => await GetServersInternalAsync(ServerType.PublicServersWithTopPlayers), TimeSpan.FromSeconds(15));
             _onlineServersWithPlayersCache = new Cacheable<List<Server>>(TimeSpan.FromSeconds(30), async () => await GetServersInternalAsync(ServerType.AllServersWithAllPlayers), TimeSpan.FromSeconds(15));
@@ -109,12 +109,13 @@ namespace Dynastio.Net
         /// <summary>
         /// Fetches all players by aggregating across servers.
         /// </summary>
-        public async Task<List<Player>> GetPlayersAsync()
+        public async Task<List<Player>> GetPlayersAsync(bool cache = false)
         {
-            var servers = await GetServersInternalAsync(ServerType.AllServersWithAllPlayers);
-
-            _onlineServersWithPlayersCache.Update(servers);
-
+            if (!cache)
+            {
+                var servers = await GetServersInternalAsync(ServerType.AllServersWithAllPlayers);
+                _onlineServersWithPlayersCache.Update(servers);
+            }
             return _onlineServersWithPlayersCache
                  .Value
                  .SelectMany(s => s.GetPlayers() ?? Array.Empty<Player>())
@@ -123,12 +124,13 @@ namespace Dynastio.Net
         /// <summary>
         /// Fetches top players by aggregating across servers.
         /// </summary>
-        public async Task<List<Player>> GetTopPlayersAsync()
+        public async Task<List<Player>> GetTopPlayersAsync(bool cache = false)
         {
-            var servers = await GetServersInternalAsync(ServerType.AllServersWithTopPlayers);
-
-            _onlineServersCache.Update(servers);
-
+            if (!cache)
+            {
+                var servers = await GetServersInternalAsync(ServerType.AllServersWithTopPlayers);
+                _onlineServersCache.Update(servers);
+            }
             return _onlineServersCache
                  .Value
                  .Select(s => new Player()
@@ -136,8 +138,7 @@ namespace Dynastio.Net
                      Level = s.TopPlayerLevel,
                      Nickname = s.TopPlayerName,
                      Score = s.TopPlayerScore,
-                     Parent = s,
-                 })
+                 }.Update(s))
              .ToList();
         }
         /// <summary>

@@ -24,7 +24,11 @@ namespace Dynastio.Net
         internal Player Update(Server parent)
         {
             Parent = parent;
-            UniqueId = "hash$" + InternalId.GetHashCode();
+            if (InternalId == 0)
+            {
+                InternalId = (ulong)(parent.Label.GetHashCode() + Nickname.GetHashCode());
+            }
+
             return this;
         }
 
@@ -34,32 +38,13 @@ namespace Dynastio.Net
         /// </summary>
         /// <param name="nickname">The nickname to search for.</param>
         public bool IsMatched(string nickname) =>
-            SearchableNickname.Contains(nickname.ToLower().Trim());
+            Nickname.ToLower().Contains(nickname.ToLower().Trim());
 
         // -------------------
         // Non-serialized props
         // -------------------
 
-        /// <summary>
-        /// A generated internal unique ID for in-memory identification.
-        /// Not serialized to JSON.
-        /// </summary>
-        [JsonIgnore]
-        public string UniqueId { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Lowercase, search-friendly version of <see cref="Nickname"/>.
-        /// Not serialized to JSON.
-        /// </summary>
-        [JsonIgnore]
-        public string SearchableNickname { get; set; } = string.Empty;
-
-        /// <summary>
-        /// A sanitized version of <see cref="Nickname"/> safe for display.
-        /// Not serialized to JSON.
-        /// </summary>
-        [JsonIgnore]
-        public string SafeNickname { get; set; } = string.Empty;
 
         /// <summary>
         /// Indicates whether the player has any valid authentication ID.
@@ -95,42 +80,42 @@ namespace Dynastio.Net
         /// Current X coordinate of the player in the game world.
         /// </summary>
         [JsonProperty("x")]
-        public int X { get; set; }
+        public int X { get; set; } = 0;
 
         /// <summary>
         /// Current Y coordinate of the player in the game world.
         /// </summary>
         [JsonProperty("y")]
-        public int Y { get; set; }
+        public int Y { get; set; } = 0;
 
         /// <summary>
         /// The display nickname of the player.
         /// </summary>
         [JsonProperty("name")]
-        public string Nickname { get; set; }
+        public string Nickname { get; set; } = "";
 
         /// <summary>
         /// The player's authentication or identity string (may include platform info).
         /// </summary>
         [JsonProperty("id")]
-        public string Id { get; set; }
+        public string Id { get; set; } = "";
 
         /// <summary>
         /// The player's current score.
         /// </summary>
         [JsonProperty("score")]
-        public long Score { get; set; }
+        public long Score { get; set; } = 0;
 
         /// <summary>
         /// The player's current level.
         /// </summary>
         [JsonProperty("level")]
-        public int Level { get; set; }
+        public int Level { get; set; } = 0;
 
         /// <summary>
         /// The name of the team the player belongs to (if any).
         /// </summary>
         [JsonProperty("team")]
-        public string Team { get; set; } = string.Empty;
+        public string Team { get; set; } = "";
     }
 }

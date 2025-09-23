@@ -18,7 +18,7 @@ namespace Dynastio.Net
 
         /// <summary>Server IPv4 or hostname.</summary>
         [JsonProperty("ip")]
-        public string Ip { get; set; } = string.Empty;
+        public string Ip { get; set; } = "";
 
         /// <summary>Plain-text port for legacy clients.</summary>
         [JsonProperty("port")]
@@ -26,7 +26,7 @@ namespace Dynastio.Net
 
         /// <summary>Hostname for SSL connections.</summary>
         [JsonProperty("ssl_host")]
-        public string SslHost { get; set; } = string.Empty;
+        public string SslHost { get; set; } = "";
 
         /// <summary>Port for SSL connections.</summary>
         [JsonProperty("ssl_port")]
@@ -68,15 +68,15 @@ namespace Dynastio.Net
 
         /// <summary>Name of the current map.</summary>
         [JsonProperty("map")]
-        public string Map { get; set; } = string.Empty;
+        public string Map { get; set; } = "";
 
         /// <summary>Hash or checksum of the map resources.</summary>
         [JsonProperty("map_hash")]
-        public string MapHash { get; set; } = string.Empty;
+        public string MapHash { get; set; } = "";
 
         /// <summary>Identifier of the game mode.</summary>
         [JsonProperty("game_mode")]
-        public string GameMode { get; set; } = string.Empty;
+        public string GameMode { get; set; } = "";
 
         /// <summary>True if this is a custom game mode.</summary>
         [JsonProperty("custom_mode")]
@@ -87,19 +87,19 @@ namespace Dynastio.Net
 
         /// <summary>Label or friendly name of the server.</summary>
         [JsonProperty("label")]
-        public string Label { get; set; } = string.Empty;
+        public string Label { get; set; } = "";
 
         /// <summary>Geographical region (e.g., "eu-west").</summary>
         [JsonProperty("region")]
-        public string Region { get; set; } = string.Empty;
+        public string Region { get; set; } = "";
 
         /// <summary>Version string of the running server build.</summary>
         [JsonProperty("version")]
-        public string Version { get; set; } = string.Empty;
+        public string Version { get; set; } = "";
 
         /// <summary>Secret token for private or cross-server invitations.</summary>
         [JsonProperty("secret")]
-        public string Secret { get; set; } = string.Empty;
+        public string Secret { get; set; } = "";
 
         /// <summary>True if the server is private/invite-only.</summary>
         [JsonProperty("private")]
@@ -110,7 +110,7 @@ namespace Dynastio.Net
 
         /// <summary>Display name of the highest-scoring player.</summary>
         [JsonProperty("top_player_name")]
-        public string TopPlayerName { get; set; } = string.Empty;
+        public string TopPlayerName { get; set; } = "";
 
         /// <summary>Score achieved by the top player.</summary>
         [JsonProperty("top_player_score")]
@@ -129,7 +129,7 @@ namespace Dynastio.Net
 
         /// <summary>Backend identifier for routing or diagnostics.</summary>
         [JsonProperty("backend")]
-        public string Backend { get; set; } = string.Empty;
+        public string Backend { get; set; } = "";
 
         /// <summary>True if using the new I/O subsystem.</summary>
         [JsonProperty("new_io")]
